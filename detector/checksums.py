@@ -1,6 +1,7 @@
 ##################################################
 ## This modules checks the checksum of the packet and compares it with the original checksum
 ##################################################
+## File: checksums.py
 ## Author: Lukáš Perina
 ## Email: 527341@mail.muni.cz
 ## Programme: FI N-SWE Software Engineering

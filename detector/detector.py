@@ -1,3 +1,20 @@
+##################################################
+## Detect changes and modifications in pcap files
+##################################################
+## File: detector.py
+## Author: Lukáš Perina
+## Email: 527341@mail.muni.cz
+## Programme: FI N-SWE Software Engineering
+## Plan: FI OPS Deployment and operations of software systems
+## Year: 2022/2023
+##################################################
+
+# calculate the checksum of the packet
+# if the checksum is not the same as the original packet, the packet is modified
+# returns true if the packet checksum is modified, false otherwise
+# delete checksum and force recalculation by calling pkt.__class__(bytes(pkt))
+# checks if the checksum is modified in TCP, UDP, IP and ICMP layers
+
 import os
 import logging
 import checksums
