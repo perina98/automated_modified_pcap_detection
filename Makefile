@@ -8,6 +8,6 @@ all :
 dataset : clean
 	python3 makedataset.py
 detector :
-	python3 detector.py
+	python3 detector.py --dataset dataset
 clean :
 	rm -rf dataset
