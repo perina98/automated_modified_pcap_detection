@@ -53,10 +53,3 @@ def check_checksum(pkt):
             return True
 
     return False
-
-def get_failed_checksums(pkts):
-    failed_checksums = 0
-    for pkt in pkts:
-        if check_checksum(pkt):
-            failed_checksums += 1
-    return failed_checksums

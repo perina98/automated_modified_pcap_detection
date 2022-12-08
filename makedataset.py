@@ -20,11 +20,9 @@ def make_dataset_tcprewrite():
     #3 change ip address and ports
     subprocess.run(['tcprewrite', '--pnat=10.2.2.27:10.3.8.88', '--portmap=22:10222,443:60123', '--fixcsum' , '--infile=./'+INFILE, '--outfile='+OUTDIR+'/out-03.pcap'])
 
-def make_dataset_scapy():
+def make_dataset_scapy(pkts):
     print('Creating scapy dataset')
 
-    load_layer('tls')
-    pkts = rdpcap(INFILE)
     orig = copy.deepcopy(pkts)
     
     #4 change dns domain in dns query
@@ -149,11 +147,9 @@ def make_dataset_scapy():
 
 
     
-def make_dataset_multi():
+def make_dataset_multi(pkts):
     print('Creating multi dataset')
 
-    load_layer('tls')
-    pkts = rdpcap(INFILE)
     orig = copy.deepcopy(pkts)
 
     #16 change source ip address, port, mac address
@@ -189,6 +185,25 @@ def make_dataset_multi():
     
     wrpcap(OUTDIR+'/out-18.pcap', pkts)
 
+def make_dataset_scapy_ext(pkts):
+    print('Creating scapy_ext dataset')
+
+    orig = copy.deepcopy(pkts)
+    
+    #19 change IP address
+    for pkt in pkts:
+        if pkt.haslayer(IP):
+            if pkt[IP].src == '4.122.55.1' and pkt[IP].dst == '4.122.55.254':
+                pkt[IP].src = '4.122.55.198'
+                pkt[IP].dst = '4.122.55.199'
+            if pkt[IP].src == '4.122.55.254' and pkt[IP].dst == '4.122.55.1':
+                pkt[IP].src = '4.122.55.199'
+                pkt[IP].dst = '4.122.55.198'
+    
+    wrpcap(OUTDIR+'/out-19.pcap', pkts)
+    pkts = copy.deepcopy(orig)
+
+
 
 def ensure_dir():
     # make sure the output directory exists
@@ -204,10 +219,21 @@ def ensure_file():
         print('Input file input.pcap does not exist in current directory')
         exit(1)
 
+def run_all(pkts):
+    make_dataset_tcprewrite()
+
+    orig = copy.deepcopy(pkts)
+    make_dataset_scapy(pkts)
+    pkts = copy.deepcopy(orig)
+    make_dataset_multi(pkts)
+    pkts = copy.deepcopy(orig)
+    make_dataset_scapy_ext(pkts)
+
 if __name__ == '__main__':
     
     ensure_file()
     ensure_dir()
-    make_dataset_tcprewrite()
-    make_dataset_scapy()
-    make_dataset_multi()
+
+    load_layer('tls')
+    pkts = rdpcap(INFILE)
+    run_all(pkts)

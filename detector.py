@@ -12,7 +12,8 @@
 import argparse 
 import os
 import logging
-from detector import checksums
+import copy
+from detector import checksums, protocols, arp
 from scapy.all import *
 from scapy.layers.tls import *
 
@@ -31,11 +32,23 @@ def check_pcap(pcap_path):
     number_of_packets = int(os.popen('tshark -r '+pcap_path+' | wc -l').read())
 
     load_layer('tls')
-    pcap_modifications = {}
+    pcap_modifications = {
+        'failed_checksums': 0,
+        'failed_protocols': 0,
+        'failed_arp_ips': 0
+    }
     pkts = PcapReader(pcap_path)
-    pcap_modifications["failed_checksums"] = checksums.get_failed_checksums(pkts)
+    for pkt in pkts:
+        pcap_modifications["failed_checksums"] += 1 if checksums.check_checksum(pkt) else 0
+        pcap_modifications["failed_protocols"] += 1 if protocols.check_protocol(pkt) else 0
+    
+    pkts = PcapReader(pcap_path)
+    pcap_modifications["failed_arp_ips"] = arp.get_failed_arp_ips(pkts)
+
 
     print (pcap_path," pcap_modifications['failed_checksums'] = ", str(pcap_modifications["failed_checksums"]) + "/" + str(number_of_packets))
+    print (pcap_path," pcap_modifications['failed_protocols'] = ", str(pcap_modifications["failed_protocols"]) + "/" + str(number_of_packets))
+    print (pcap_path," pcap_modifications['failed_arp_ips'] = ", str(pcap_modifications["failed_arp_ips"]) + "/" + str(number_of_packets))
 
 
 if __name__ == '__main__':
