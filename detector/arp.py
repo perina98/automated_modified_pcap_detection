@@ -11,26 +11,21 @@
 
 from scapy.all import *
 from scapy.layers.tls import *
-import ipaddress
 
-def get_failed_arp_ips(pkts):
-    arp_ips = []
-    all_ips = []
+def get_failed_arp_macs(pkts):
+    arp_macs = []
+    all_macs = []
     for pkt in pkts:
         if pkt.haslayer(ARP):
-            if ipaddress.IPv4Address(pkt[ARP].psrc) in ipaddress.IPv4Network('4.122.55.0/24') and \
-               ipaddress.IPv4Address(pkt[ARP].pdst) in ipaddress.IPv4Network('4.122.55.0/24'):
-                arp_ips.append(pkt[ARP].psrc)
-                arp_ips.append(pkt[ARP].pdst)
+            arp_macs.append(pkt[Ether].src)
+            arp_macs.append(pkt[Ether].dst)
         if pkt.haslayer(IP):
-            if ipaddress.IPv4Address(pkt[IP].src) in ipaddress.IPv4Network('4.122.55.0/24') and \
-               ipaddress.IPv4Address(pkt[IP].dst) in ipaddress.IPv4Network('4.122.55.0/24'):
-                all_ips.append(pkt[IP].src)
-                all_ips.append(pkt[IP].dst)
+            all_macs.append({'src': pkt[Ether].src, 'dst': pkt[Ether].dst})
 
-    failed_ips = 0
-    for ip in set(all_ips):
-        if ip not in set(arp_ips):
-            failed_ips += 1
+    failed_macs = 0
+    arp_set = set(arp_macs)
+    for mac in all_macs:
+        if mac['src'] not in arp_set and mac['dst'] not in arp_set:
+            failed_macs += 1
     
-    return failed_ips
+    return failed_macs

@@ -13,7 +13,7 @@ import argparse
 import os
 import logging
 import copy
-from detector import checksums, protocols, arp
+from detector import checksums, protocols, arp, macs
 from scapy.all import *
 from scapy.layers.tls import *
 
@@ -27,15 +27,23 @@ def get_dataset_pcaps(dir):
             pcaps.append(dir+'/'+file)
     return pcaps
 
+# get number of packets in pcap file
+def get_number_of_packets_using_capinfos(pcap_path):
+    num = os.popen("capinfos -c -M " + pcap_path + " | grep -oP 'Number of packets:\s*\K\d+'").read()
+    if num == '':
+        return 0
+    return num
+
 # read pcap file and check if it is modified
 def check_pcap(pcap_path):
-    number_of_packets = int(os.popen('tshark -r '+pcap_path+' | wc -l').read())
+    number_of_packets = get_number_of_packets_using_capinfos(pcap_path)
 
     load_layer('tls')
     pcap_modifications = {
         'failed_checksums': 0,
         'failed_protocols': 0,
-        'failed_arp_ips': 0
+        'failed_arp_ips': 0,
+        'failed_macs_map': 0
     }
     pkts = PcapReader(pcap_path)
     for pkt in pkts:
@@ -43,12 +51,16 @@ def check_pcap(pcap_path):
         pcap_modifications["failed_protocols"] += 1 if protocols.check_protocol(pkt) else 0
     
     pkts = PcapReader(pcap_path)
-    pcap_modifications["failed_arp_ips"] = arp.get_failed_arp_ips(pkts)
+    pcap_modifications["failed_arp_ips"] = arp.get_failed_arp_macs(pkts)
+
+    pkts = PcapReader(pcap_path)
+    pcap_modifications["failed_macs_map"] = macs.get_failed_mac_maps(pkts)
 
 
-    print (pcap_path," pcap_modifications['failed_checksums'] = ", str(pcap_modifications["failed_checksums"]) + "/" + str(number_of_packets))
-    print (pcap_path," pcap_modifications['failed_protocols'] = ", str(pcap_modifications["failed_protocols"]) + "/" + str(number_of_packets))
-    print (pcap_path," pcap_modifications['failed_arp_ips'] = ", str(pcap_modifications["failed_arp_ips"]) + "/" + str(number_of_packets))
+    print (pcap_path," pcap_modifications['failed_checksums'] = ", str(pcap_modifications["failed_checksums"]) + "/" + str(number_of_packets), end = '')
+    print (pcap_path," pcap_modifications['failed_protocols'] = ", str(pcap_modifications["failed_protocols"]) + "/" + str(number_of_packets), end = '')
+    print (pcap_path," pcap_modifications['failed_arp_ips'] = ", str(pcap_modifications["failed_arp_ips"]) + "/" + str(number_of_packets), end = '')
+    print (pcap_path," pcap_modifications['failed_macs_map'] = ", str(pcap_modifications["failed_macs_map"]) + "/" + str(number_of_packets), end = '')
 
 
 if __name__ == '__main__':
