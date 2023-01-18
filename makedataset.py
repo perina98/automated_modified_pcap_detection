@@ -158,6 +158,7 @@ def make_dataset_multi(pkts):
             if pkt[IP].dst == '184.51.9.105':
                 pkt[IP].src = '10.3.8.89'
                 pkt.src = '00:00:00:00:00:01'
+                pkt.dst = '00:00:00:00:00:02'
 
                 if pkt.haslayer(TCP):
                     pkt[TCP].sport = 10223

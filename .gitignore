@@ -1,4 +1,5 @@
-/dataset
+**/__pycache__
 TODO
-/detector/__pycache__
-/__pycache__
+/dataset
+/*.db
+/*.bak.py
