@@ -17,6 +17,7 @@ from modules import checksums, protocols, arp, macs, db
 from static import constants
 from scapy.all import *
 from scapy.layers.tls import *
+from tqdm import tqdm
 
 logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
 
@@ -51,8 +52,9 @@ class Detector():
             if not self.args.input_pcap.endswith(".pcap"):
                 print('Input file is not pcap')
                 exit(1)
-            self.db.load(self, self.args.input_pcap, self.get_pcap_packets_count(self.args.input_pcap))
-            self.check_pcap(self.args.input_pcap)
+            #self.db.load(self, self.args.input_pcap, self.get_pcap_packets_count(self.args.input_pcap))
+            id_pcap = self.db.save_pcap(self, self.args.input_pcap)
+            self.check_pcap(self.args.input_pcap, id_pcap)
             exit(0)
     
     def get_pcap_packets_count(self, pcap_path):
@@ -78,14 +80,15 @@ class Detector():
         return pcaps
 
     # get number of packets in pcap file
-    def get_pcap_info(self, pcap_path):
-        self.db_cursor.execute("SELECT id_pcap, COUNT(*) FROM packet WHERE id_pcap = (SELECT id_pcap FROM pcap WHERE path = ?)", (pcap_path,))
+    def get_pcap_id(self, pcap_path):
+        self.db_cursor.execute("SELECT id_pcap FROM packet WHERE id_pcap = (SELECT id_pcap FROM pcap WHERE path = ?)", (pcap_path,))
         result = self.db_cursor.fetchone()
-        return {'id_pcap': result[0], 'number_of_packets': result[1]}
+        return result[0]
 
     # read pcap file and check if it is modified
-    def check_pcap(self, pcap_path):
-        info = self.get_pcap_info(pcap_path)
+    def check_pcap(self, pcap_path, id_pcap):
+        #id_pcap = self.get_pcap_id(pcap_path)
+        packet_count = self.get_pcap_packets_count(self.args.input_pcap)
 
         pcap_modifications = {
             'failed_checksums': 0,
@@ -94,12 +97,24 @@ class Detector():
             'failed_macs_map': 0
         }
 
-        pcap_modifications["failed_checksums"] = self.checksums.get_failed_checksums(self,info["id_pcap"])
-        pcap_modifications["failed_protocols"] = protocols.Protocols().get_failed_protocols(self,info["id_pcap"])
-        pcap_modifications["failed_arp_ips"] = arp.Arp().get_failed_arp_ips(self,info["id_pcap"])
-        pcap_modifications["failed_macs_map"] = macs.Macs().get_failed_mac_maps(self,info["id_pcap"])
+        pkts = PcapReader(pcap_path)
+        protos = protocols.Protocols()
+        for pkt in tqdm(pkts, desc="Checking pcap", unit=" packets", total=packet_count):
+            if self.checksums.check_checksum(pkt):
+                pcap_modifications["failed_checksums"] += 1
 
-        print (pcap_path," pcap_modifications['failed_checksums'] = ", str(pcap_modifications["failed_checksums"]) + "/" + str(info["number_of_packets"]))
-        print (pcap_path," pcap_modifications['failed_protocols'] = ", str(pcap_modifications["failed_protocols"]) + "/" + str(info["number_of_packets"]))
-        print (pcap_path," pcap_modifications['failed_arp_ips'] = ", str(pcap_modifications["failed_arp_ips"]) + "/" + str(info["number_of_packets"]))
-        print (pcap_path," pcap_modifications['failed_macs_map'] = ", str(pcap_modifications["failed_macs_map"]) + "/" + str(info["number_of_packets"]))
+            if protos.check_protocol(pkt):
+                pcap_modifications["failed_protocols"] += 1
+
+            self.db.save_packet(self, id_pcap, pkt)
+
+        self.db_conn.commit()
+
+        pcap_modifications["failed_arp_ips"] = arp.Arp().get_failed_arp_ips(self, id_pcap)
+        pcap_modifications["failed_macs_map"] = macs.Macs().get_failed_mac_maps(self, id_pcap)
+
+
+        print (pcap_path," pcap_modifications['failed_checksums'] = ", str(pcap_modifications["failed_checksums"]) + "/" + str(packet_count))
+        print (pcap_path," pcap_modifications['failed_protocols'] = ", str(pcap_modifications["failed_protocols"]) + "/" + str(packet_count))
+        print (pcap_path," pcap_modifications['failed_arp_ips'] = ", str(pcap_modifications["failed_arp_ips"]) + "/" + str(packet_count))
+        print (pcap_path," pcap_modifications['failed_macs_map'] = ", str(pcap_modifications["failed_macs_map"]) + "/" + str(packet_count))

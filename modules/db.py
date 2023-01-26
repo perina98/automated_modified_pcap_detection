@@ -33,24 +33,73 @@ class Database():
                     port_dst INTEGER,
                     eth_src TEXT,
                     eth_dst TEXT,
-                    tcp_checksum TEXT,
-                    udp_checksum TEXT,
-                    ip_checksum TEXT,
-                    icmp_checksum TEXT,
-                    tcp_checksum_calculated TEXT,
-                    udp_checksum_calculated TEXT,
-                    ip_checksum_calculated TEXT,
-                    icmp_checksum_calculated TEXT,
                     id_pcap INTEGER,
                     FOREIGN KEY (id_pcap) REFERENCES pcap(id_pcap)
                     )''')
+
+    def save_pcap(self, detector, path):
+        detector.db_cursor.execute("""INSERT INTO pcap (path) VALUES (?)""", (path,))
+        return detector.db_cursor.lastrowid
+
+    def save_packet(self, detector, id_pcap, pkt):
+        pkt_data = {
+                'protocol': None,
+                'type': None,
+                'ip_src': None,
+                'ip_dst': None,
+                'port_src': None,
+                'port_dst': None,
+                'eth_src': None,
+                'eth_dst': None
+            }
+
+        if pkt.haslayer(IP):
+            pkt_data['protocol'] = pkt[IP].proto
+            pkt_data['ip_src'] = pkt[IP].src
+            pkt_data['ip_dst'] = pkt[IP].dst
+
+            if pkt.haslayer(TCP):
+                pkt_data['port_src'] = pkt[TCP].sport
+                pkt_data['port_dst'] = pkt[TCP].dport
+            elif pkt.haslayer(UDP):
+                pkt_data['port_src'] = pkt[UDP].sport
+                pkt_data['port_dst'] = pkt[UDP].dport
+
+        pkt_data['type'] = pkt.type
+        pkt_data['eth_src'] = pkt[Ether].src
+        pkt_data['eth_dst'] = pkt[Ether].dst
+
+        detector.db_cursor.execute("""INSERT INTO packet (packet_timestamp, 
+                                protocol, 
+                                type,
+                                ip_src, 
+                                ip_dst, 
+                                eth_src,
+                                eth_dst,
+                                port_src, 
+                                port_dst,
+                                id_pcap)
+                                VALUES (?,?,?,?,?,?,?,?,?,?)""", (str(pkt.time),
+                                pkt_data['protocol'],
+                                pkt_data['type'],
+                                pkt_data['ip_src'],
+                                pkt_data['ip_dst'],
+                                pkt_data['eth_src'],
+                                pkt_data['eth_dst'],
+                                pkt_data['port_src'],
+                                pkt_data['port_dst'],
+                                id_pcap
+                            ))
+
+        #detector.db_conn.commit()
 
     def get_packets(self, id_pcap, cursor, rows = ["*"]):
         query = "SELECT * FROM packet WHERE id_pcap = ?"
         query = query.replace("*", ",".join(rows))
         cursor.execute(query, (id_pcap,))
         return cursor.fetchall()
-        
+    
+    # not used anymore
     def load(self,detector,pcap_path, pcap_len):
         detector.log.debug("Loading pcap file %s", pcap_path)
 
