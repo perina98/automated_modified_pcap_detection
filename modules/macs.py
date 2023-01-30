@@ -10,25 +10,27 @@
 ##################################################
 
 from scapy.all import *
+from modules.db import Packet
 
 class Macs():
     def get_macs(self, pkts):
         macs = {}
         for row in pkts:
-            if row[0] == 2048:
-                if macs.get(row[3]) == None:
-                    macs[row[3]] = [row[1]]
+            if row.type == 2048:
+                if macs.get(row.ip_src) == None:
+                    macs[row.ip_src] = [row.eth_src]
                 else:
-                    macs[row[3]].append(row[1])
-                
-                if macs.get(row[4]) == None:
-                    macs[row[4]] = [row[2]]
+                    macs[row.ip_src].append(row.eth_src)
+
+                if macs.get(row.ip_dst) == None:
+                    macs[row.ip_dst] = [row.eth_dst]
                 else:
-                    macs[row[4]].append(row[2])
+                    macs[row.ip_dst].append(row.eth_dst)
+
         return macs
 
-    def get_failed_mac_maps(self, detector, id_pcap):
-        macs = self.get_macs(detector.db.get_packets(id_pcap, detector.db_cursor, ["type", "eth_src", "eth_dst", "ip_src", "ip_dst"]))
+    def get_failed_mac_maps(self, id_pcap, session):
+        macs = self.get_macs(session.query(Packet).filter(Packet.id_pcap == id_pcap).all())
         failed = 0
         for ip in macs:
             if len(set(macs[ip])) > 1:

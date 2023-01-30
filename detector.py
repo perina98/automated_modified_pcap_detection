@@ -12,12 +12,17 @@
 import argparse 
 import os
 import logging
-import sqlite3
 from modules import checksums, protocols, arp, macs, db
+from modules.db import Pcap, Packet
 from static import constants
 from scapy.all import *
 from scapy.layers.tls import *
 from tqdm import tqdm
+
+import sqlalchemy
+from sqlalchemy import create_engine, Column, Integer, String
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.declarative import declarative_base
 
 logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
 
@@ -25,11 +30,9 @@ class Detector():
     def __init__(self):
         self.pcaps = None
         self.args = self.get_args()
-        self.database = constants.DATABASE
-        self.db_conn = sqlite3.connect(constants.DATABASE)
-        self.db_cursor = self.db_conn.cursor()
+        self.engine = create_engine('sqlite:///' + constants.DATABASE)
+        self.session = sessionmaker(bind=self.engine)()
         self.db = db.Database()
-
         self.checksums = checksums.Checksums()
 
         logging.basicConfig(level=self.args.log.upper(), format='%(message)s')
@@ -37,23 +40,22 @@ class Detector():
 
         load_layer('tls')
         self.log.debug("Ensuring database exists")
-        self.db.ensure_db(self.db_cursor)
+        self.db.ensure_db(self.engine)
 
 
     def run(self):
         if self.args.dataset_dir:
             pcaps = self.get_dataset_pcaps()
             for pcap in pcaps:
-                db.Database().load(self, pcap, self.get_pcap_packets_count(pcap))
-                self.check_pcap(pcap)
+                id_pcap = self.db.save_pcap(self.session, pcap)
+                self.check_pcap(pcap, id_pcap)
             exit(0)
 
         if self.args.input_pcap:
             if not self.args.input_pcap.endswith(".pcap"):
                 print('Input file is not pcap')
                 exit(1)
-            #self.db.load(self, self.args.input_pcap, self.get_pcap_packets_count(self.args.input_pcap))
-            id_pcap = self.db.save_pcap(self, self.args.input_pcap)
+            id_pcap = self.db.save_pcap(self.session, self.args.input_pcap)
             self.check_pcap(self.args.input_pcap, id_pcap)
             exit(0)
     
@@ -79,15 +81,8 @@ class Detector():
                 pcaps.append(self.args.dataset_dir+'/'+file)
         return pcaps
 
-    # get number of packets in pcap file
-    def get_pcap_id(self, pcap_path):
-        self.db_cursor.execute("SELECT id_pcap FROM packet WHERE id_pcap = (SELECT id_pcap FROM pcap WHERE path = ?)", (pcap_path,))
-        result = self.db_cursor.fetchone()
-        return result[0]
-
     # read pcap file and check if it is modified
     def check_pcap(self, pcap_path, id_pcap):
-        #id_pcap = self.get_pcap_id(pcap_path)
         packet_count = self.get_pcap_packets_count(self.args.input_pcap)
 
         pcap_modifications = {
@@ -106,12 +101,12 @@ class Detector():
             if protos.check_protocol(pkt):
                 pcap_modifications["failed_protocols"] += 1
 
-            self.db.save_packet(self, id_pcap, pkt)
+            self.db.save_packet(self.session, id_pcap, pkt)
 
-        self.db_conn.commit()
+        self.session.commit()
 
-        pcap_modifications["failed_arp_ips"] = arp.Arp().get_failed_arp_ips(self, id_pcap)
-        pcap_modifications["failed_macs_map"] = macs.Macs().get_failed_mac_maps(self, id_pcap)
+        pcap_modifications["failed_arp_ips"] = arp.Arp().get_failed_arp_ips(id_pcap, self.session)
+        pcap_modifications["failed_macs_map"] = macs.Macs().get_failed_mac_maps(id_pcap, self.session)
 
 
         print (pcap_path," pcap_modifications['failed_checksums'] = ", str(pcap_modifications["failed_checksums"]) + "/" + str(packet_count))

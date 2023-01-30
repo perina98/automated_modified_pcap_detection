@@ -11,18 +11,20 @@
 
 from scapy.all import *
 from scapy.layers.tls import *
+from modules.db import Packet
 
 class Arp():
-    def get_failed_arp_ips(self, detector, id_pcap):
+    def get_failed_arp_ips(self, id_pcap, session):
         arp_macs = []
         ip_macs = []
-        for row in detector.db.get_packets(id_pcap, detector.db_cursor, ["type", "eth_src", "eth_dst"]):
-            if row[0] == 2054:
-                arp_macs.append(row[1])
-                arp_macs.append(row[2])
-            if row[0] == 2048:
-                ip_macs.append({'src': row[1], 'dst': row[2]})
 
+        for row in session.query(Packet).filter(Packet.id_pcap == id_pcap).all():
+            if row.type == 2054:
+                arp_macs.append(row.eth_src)
+                arp_macs.append(row.eth_dst)
+            if row.type == 2048:
+                ip_macs.append({'src': row.eth_src, 'dst': row.eth_dst})
+                
         failed_macs = 0
         arp_set = set(arp_macs)
         for mac in ip_macs:
