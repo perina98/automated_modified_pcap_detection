@@ -15,40 +15,35 @@ from scapy.layers.tls import *
 class Checksums():
     def check_checksum(self,pkt):
         modified = False
+        original_checksums = {
+            "TCP": None,
+            "UDP": None,
+            "IP": None,
+            "ICMP": None
+        }
+
         if pkt.haslayer(TCP):
-            original_checksum = pkt[TCP].chksum
+            original_checksums["TCP"] = pkt[TCP].chksum
             del pkt[TCP].chksum
-            pkt = pkt.__class__(bytes(pkt))
-            calculated_checksum = pkt[TCP].chksum
-            if original_checksum != calculated_checksum:
-                modified = True
-                return modified
 
         if pkt.haslayer(UDP):
-            original_checksum = pkt[UDP].chksum
+            original_checksums["UDP"] = pkt[UDP].chksum
             del pkt[UDP].chksum
-            pkt = pkt.__class__(bytes(pkt))
-            calculated_checksum = pkt[UDP].chksum
-            if original_checksum != calculated_checksum:
-                modified = True
-                return modified
         
         if pkt.haslayer(IP):
-            original_checksum = pkt[IP].chksum
+            original_checksums["IP"] = pkt[IP].chksum
             del pkt[IP].chksum
-            pkt = pkt.__class__(bytes(pkt))
-            calculated_checksum = pkt[IP].chksum
-            if original_checksum != calculated_checksum:
-                modified = True
-                return modified
         
         if pkt.haslayer(ICMP):
-            original_checksum = pkt[ICMP].chksum
+            original_checksums["ICMP"] = pkt[ICMP].chksum
             del pkt[ICMP].chksum
-            pkt = pkt.__class__(bytes(pkt))
-            calculated_checksum = pkt[ICMP].chksum
-            if original_checksum != calculated_checksum:
-                modified = True
-                return modified
+
+        pkt = pkt.__class__(bytes(pkt))
+
+        if (original_checksums["TCP"] != None and original_checksums["TCP"] != pkt[TCP].chksum) or \
+            (original_checksums["UDP"] != None and original_checksums["UDP"] != pkt[UDP].chksum) or \
+            (original_checksums["IP"] != None and original_checksums["IP"] != pkt[IP].chksum) or \
+            (original_checksums["ICMP"] != None and original_checksums["ICMP"] != pkt[ICMP].chksum):    
+            modified = True
 
         return modified
