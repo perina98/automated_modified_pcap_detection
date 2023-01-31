@@ -12,14 +12,13 @@
 import argparse 
 import os
 import logging
-from modules import checksums, protocols, arp, macs, db
+from modules import checksums, protocols, arp, macs, db, responses
 from modules.db import Pcap, Packet
 from static import constants
 from scapy.all import *
 from scapy.layers.tls import *
 from tqdm import tqdm
 
-import sqlalchemy
 from sqlalchemy import create_engine, Column, Integer, String
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
@@ -40,8 +39,7 @@ class Detector():
 
         load_layer('tls')
         self.log.debug("Ensuring database exists")
-        self.db.ensure_db(self.engine)
-
+        self.db.ensure_db(self.engine, constants.DATABASE)
 
     def run(self):
         if self.args.dataset_dir:
@@ -89,7 +87,8 @@ class Detector():
             'failed_checksums': 0,
             'failed_protocols': 0,
             'failed_arp_ips': 0,
-            'failed_macs_map': 0
+            'failed_macs_map': 0,
+            'failed_response_times': 0,
         }
 
         pkts = PcapReader(pcap_path)
@@ -107,9 +106,11 @@ class Detector():
 
         pcap_modifications["failed_arp_ips"] = arp.Arp().get_failed_arp_ips(id_pcap, self.session)
         pcap_modifications["failed_macs_map"] = macs.Macs().get_failed_mac_maps(id_pcap, self.session)
+        pcap_modifications["failed_response_times"] = responses.Responses().get_failed_response_times(id_pcap, self.session)
 
 
         print (pcap_path," pcap_modifications['failed_checksums'] = ", str(pcap_modifications["failed_checksums"]) + "/" + str(packet_count))
         print (pcap_path," pcap_modifications['failed_protocols'] = ", str(pcap_modifications["failed_protocols"]) + "/" + str(packet_count))
         print (pcap_path," pcap_modifications['failed_arp_ips'] = ", str(pcap_modifications["failed_arp_ips"]) + "/" + str(packet_count))
         print (pcap_path," pcap_modifications['failed_macs_map'] = ", str(pcap_modifications["failed_macs_map"]) + "/" + str(packet_count))
+        print (pcap_path," pcap_modifications['failed_response_times'] = ", str(pcap_modifications["failed_response_times"]) + "/" + str(packet_count))
