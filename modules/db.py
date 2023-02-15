@@ -10,6 +10,7 @@
 ##################################################
 
 import os
+import json
 from scapy.all import *
 from scapy.layers.tls import *
 from sqlalchemy import Column, Integer, String, ForeignKey, Double
@@ -33,10 +34,14 @@ class Packet(Base):
     ip_dst = Column(String)
     port_src = Column(Integer)
     port_dst = Column(Integer)
+    seq = Column(Integer)
+    ack = Column(Integer)
+    window = Column(Integer)
     eth_src = Column(String)
     eth_dst = Column(String)
     id_pcap = Column(Integer, ForeignKey('pcap.id_pcap'))
     length = Column(Integer)
+    dns = Column(String)
     pcap = relationship("Pcap", back_populates="packets")
 
 class Database():
@@ -64,6 +69,10 @@ class Database():
             'eth_src': None,
             'eth_dst': None,
             'length': None,
+            'seq': None,
+            'ack': None,
+            'window': None,
+            'dns': None,
         }
 
         if pkt.haslayer(IP):
@@ -74,10 +83,42 @@ class Database():
             if pkt.haslayer(TCP):
                 pkt_data['port_src'] = pkt[TCP].sport
                 pkt_data['port_dst'] = pkt[TCP].dport
+                pkt_data['seq'] = pkt[TCP].seq
+                pkt_data['ack'] = pkt[TCP].ack
+                pkt_data['window'] = pkt[TCP].window
             elif pkt.haslayer(UDP):
                 pkt_data['port_src'] = pkt[UDP].sport
                 pkt_data['port_dst'] = pkt[UDP].dport
 
+        if pkt.haslayer(DNS):
+            dns_data = {
+                'id': pkt[DNS].id,
+                'qd': None,
+                'an': None,
+            }
+
+            an = None
+
+            if pkt[DNS].qd:
+                dns_data['qd'] = { 'qname': pkt[DNS].qd.qname.decode() }
+
+            if pkt[DNS].an:
+                an = []
+                for ans in pkt[DNS].an:
+                    rrname = ans.rrname
+                    rdata = ans.rdata
+                    ptype = ans.type
+                    if type(ans.rrname) is bytes:
+                        rrname = ans.rrname.decode()
+                    
+                    if type(ans.rdata) is bytes:
+                        rdata = ans.rdata.decode()
+
+                    an.append({ 'rrname': rrname, 'rdata': rdata, 'type': ptype })
+
+            dns_data['an'] = an
+            pkt_data['dns'] = json.dumps(dns_data)
+ 
         pkt_data['type'] = pkt.type
         pkt_data['eth_src'] = pkt[Ether].src
         pkt_data['eth_dst'] = pkt[Ether].dst
@@ -91,9 +132,13 @@ class Database():
             ip_dst=pkt_data['ip_dst'],
             port_src=pkt_data['port_src'],
             port_dst=pkt_data['port_dst'],
+            seq=pkt_data['seq'],
+            ack=pkt_data['ack'],
+            window=pkt_data['window'],
             eth_src=pkt_data['eth_src'],
             eth_dst=pkt_data['eth_dst'],
             length=pkt_data['length'],
+            dns=pkt_data['dns'],
             id_pcap=id_pcap
         )
         session.add(new_packet)

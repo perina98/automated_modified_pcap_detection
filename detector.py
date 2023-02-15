@@ -12,7 +12,7 @@
 import argparse 
 import os
 import logging
-from modules import checksums, protocols, arp, macs, db, responses
+from modules import checksums, protocols, arp, macs, db, responses, app_layer
 from modules.db import Pcap, Packet
 from static import constants
 from scapy.all import *
@@ -89,6 +89,7 @@ class Detector():
             'failed_arp_ips': 0,
             'failed_macs_map': 0,
             'failed_response_times': 0,
+            'failed_dns_query_response': 0,
         }
 
         pkts = PcapReader(pcap_path)
@@ -102,11 +103,13 @@ class Detector():
 
             self.db.save_packet(self.session, id_pcap, pkt)
 
+
         self.session.commit()
 
         pcap_modifications["failed_arp_ips"] = arp.Arp().get_failed_arp_ips(id_pcap, self.session)
         pcap_modifications["failed_macs_map"] = macs.Macs().get_failed_mac_maps(id_pcap, self.session)
         pcap_modifications["failed_response_times"] = responses.Responses().get_failed_response_times(id_pcap, self.session)
+        pcap_modifications["failed_dns_query_response"] = app_layer.AppLayer().get_failed_dns(id_pcap, self.session)
 
 
         print (pcap_path," pcap_modifications['failed_checksums'] = ", str(pcap_modifications["failed_checksums"]) + "/" + str(packet_count))
@@ -114,3 +117,4 @@ class Detector():
         print (pcap_path," pcap_modifications['failed_arp_ips'] = ", str(pcap_modifications["failed_arp_ips"]) + "/" + str(packet_count))
         print (pcap_path," pcap_modifications['failed_macs_map'] = ", str(pcap_modifications["failed_macs_map"]) + "/" + str(packet_count))
         print (pcap_path," pcap_modifications['failed_response_times'] = ", str(pcap_modifications["failed_response_times"]) + "/" + str(packet_count))
+        print (pcap_path," pcap_modifications['failed_dns_query_response'] = ", str(pcap_modifications["failed_dns_query_response"]) + "/" + str(packet_count))
