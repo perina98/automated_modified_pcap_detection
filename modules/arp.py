@@ -32,3 +32,13 @@ class Arp():
                 failed_macs += 1
         
         return failed_macs
+
+    def get_arp_macs(self, id_pcap, session):
+        arp_macs = []
+
+        for row in session.query(Packet).filter(Packet.id_pcap == id_pcap).all():
+            if row.type == 2054:
+                arp_macs.append(row.eth_src)
+                arp_macs.append(row.eth_dst)
+                
+        return set(arp_macs)

@@ -100,7 +100,7 @@ class Database():
             an = None
 
             if pkt[DNS].qd:
-                dns_data['qd'] = { 'qname': pkt[DNS].qd.qname.decode() }
+                dns_data['qd'] = { 'qname': pkt[DNS].qd.qname.decode(), 'qtype': pkt[DNS].qd.qtype }
 
             if pkt[DNS].an:
                 an = []
