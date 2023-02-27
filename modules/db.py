@@ -19,11 +19,6 @@ from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()
 
-class Pcap(Base):
-    __tablename__ = 'pcap'
-    id_pcap = Column(Integer, primary_key=True)
-    path = Column(String)
-
 class Packet(Base):
     __tablename__ = 'packet'
     id_packet = Column(Integer, primary_key=True)
@@ -44,13 +39,18 @@ class Packet(Base):
     dns = Column(String)
     pcap = relationship("Pcap", back_populates="packets")
 
+class Pcap(Base):
+    __tablename__ = 'pcap'
+    id_pcap = Column(Integer, primary_key=True)
+    path = Column(String)
+    packets = relationship("Packet", order_by=Packet.id_packet, back_populates="pcap")
+
 class Database():
     # create database if not exists
     def ensure_db(self, engine, database):
         if os.path.exists(database):
             os.remove(database)
         Base.metadata.create_all(engine)
-        Pcap.packets = relationship("Packet", order_by=Packet.id_packet, back_populates="pcap")
 
     def save_pcap(self, session, path):
         new_pcap = Pcap(path=path)

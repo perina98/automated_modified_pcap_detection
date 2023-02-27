@@ -12,6 +12,9 @@
 import argparse 
 import os
 import logging
+
+import multiprocessing
+
 from modules import checksums, protocols, arp, macs, db, responses, app_layer
 from modules.db import Pcap, Packet
 from static import constants
@@ -22,6 +25,7 @@ from tqdm import tqdm
 from sqlalchemy import create_engine, Column, Integer, String
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.pool import StaticPool
 
 logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
 
@@ -29,8 +33,6 @@ class Detector():
     def __init__(self):
         self.pcaps = None
         self.args = self.get_args()
-        self.engine = create_engine('sqlite:///' + constants.DATABASE)
-        self.session = sessionmaker(bind=self.engine)()
         self.db = db.Database()
         self.checksums = checksums.Checksums()
 
@@ -39,13 +41,17 @@ class Detector():
 
         load_layer('tls')
         self.log.debug("Ensuring database exists")
-        self.db.ensure_db(self.engine, constants.DATABASE)
+
+        engine = create_engine('sqlite:///' + constants.DATABASE)
+        self.db.ensure_db(engine, constants.DATABASE)
 
     def run(self):
+        engine = create_engine('sqlite:///' + constants.DATABASE)
+        session = sessionmaker(bind=engine)()
         if self.args.dataset_dir:
             pcaps = self.get_dataset_pcaps()
             for pcap in pcaps:
-                id_pcap = self.db.save_pcap(self.session, pcap)
+                id_pcap = self.db.save_pcap(session, pcap)
                 self.check_pcap(pcap, id_pcap)
             exit(0)
 
@@ -53,7 +59,7 @@ class Detector():
             if not self.args.input_pcap.endswith(".pcap"):
                 print('Input file is not pcap')
                 exit(1)
-            id_pcap = self.db.save_pcap(self.session, self.args.input_pcap)
+            id_pcap = self.db.save_pcap(session, self.args.input_pcap)
             self.check_pcap(self.args.input_pcap, id_pcap)
             exit(0)
     
@@ -79,6 +85,55 @@ class Detector():
                 pcaps.append(self.args.dataset_dir+'/'+file)
         return pcaps
 
+    def process_packet(self, packet):
+        pcap_modifications = {
+            'failed_checksums': 0,
+            'failed_protocols': 0,
+        } 
+        if self.checksums.check_checksum(packet):
+            pcap_modifications["failed_checksums"] += 1
+        if protocols.Protocols().check_protocol(packet):
+            pcap_modifications["failed_protocols"] += 1
+
+        return pcap_modifications
+        
+    def save_packets(self, packet_chunk, id_pcap):
+        engine = create_engine('sqlite:///' + constants.DATABASE)
+        session = sessionmaker(bind=engine)()
+        for packet in packet_chunk:
+            self.db.save_packet(session, id_pcap, packet)
+        
+        session.commit()
+
+    def worker(self, in_queue, save_queue, shared_list, worker_type, id_pcap):
+        if worker_type == 'process':
+            while True:
+                packet = in_queue.get()
+                if packet is None:
+                    in_queue.task_done()
+                    break
+
+                processed_packet = self.process_packet(packet)
+                shared_list.append(processed_packet)
+                in_queue.task_done()
+        elif worker_type == 'save':
+            packet_chunk = []
+            while True:
+                packet = save_queue.get()
+                if packet is None:
+                    save_queue.task_done()
+                    self.save_packets(packet_chunk, id_pcap)
+                    break
+                save_queue.task_done()
+
+                packet_chunk.append(packet)
+
+                if len(packet_chunk) == 10000:
+                    print ("Saving 10000 packets")
+                    self.save_packets(packet_chunk, id_pcap)
+                    packet_chunk = []
+
+
     # read pcap file and check if it is modified
     def check_pcap(self, pcap_path, id_pcap):
         packet_count = self.get_pcap_packets_count(self.args.input_pcap)
@@ -89,27 +144,49 @@ class Detector():
             'failed_arp_ips': 0,
             'failed_macs_map': 0,
             'failed_response_times': 0,
-            'failed_dns_query_response': 0,
+            'failed_dns_query_answer': 0,
+            'failed_dns_answer_time': 0,
         }
 
+        in_queue = multiprocessing.JoinableQueue()
+        save_queue = multiprocessing.JoinableQueue()
+        manager = multiprocessing.Manager()
+        shared_list = manager.list([])
+
+        num_processes = multiprocessing.cpu_count() - 1
+        workers = []
+        for i in range(num_processes):
+            p = multiprocessing.Process(target=self.worker, args=(in_queue, save_queue, shared_list, 'process', id_pcap))
+            workers.append(p)
+            p.start()
+        p = multiprocessing.Process(target=self.worker, args=(in_queue, save_queue, shared_list, 'save', id_pcap))
+        workers.append(p)
+        p.start()
+
         pkts = PcapReader(pcap_path)
-        protos = protocols.Protocols()
-        for pkt in tqdm(pkts, desc="Checking pcap", unit=" packets", total=packet_count):
-            if self.checksums.check_checksum(pkt):
-                pcap_modifications["failed_checksums"] += 1
+        for packet in pkts:
+            in_queue.put(packet)
+            save_queue.put(packet)
 
-            if protos.check_protocol(pkt):
-                pcap_modifications["failed_protocols"] += 1
+        for i in range(num_processes):
+            in_queue.put(None)
+        save_queue.put(None)
 
-            self.db.save_packet(self.session, id_pcap, pkt)
+        for p in workers:
+            p.join()
 
+        for packet in shared_list:
+            for key in packet:
+                pcap_modifications[key] += packet[key]
 
-        self.session.commit()
+        engine = create_engine('sqlite:///' + constants.DATABASE)
+        session = sessionmaker(bind=engine)()
 
-        pcap_modifications["failed_arp_ips"] = arp.Arp().get_failed_arp_ips(id_pcap, self.session)
-        pcap_modifications["failed_macs_map"] = macs.Macs().get_failed_mac_maps(id_pcap, self.session)
-        pcap_modifications["failed_response_times"] = responses.Responses().get_failed_response_times(id_pcap, self.session)
-        pcap_modifications["failed_dns_query_response"] = app_layer.AppLayer().get_failed_dns(id_pcap, self.session)
+        pcap_modifications["failed_arp_ips"] = arp.Arp().get_failed_arp_ips(id_pcap, session)
+        pcap_modifications["failed_macs_map"] = macs.Macs().get_failed_mac_maps(id_pcap, session)
+        pcap_modifications["failed_response_times"] = responses.Responses().get_failed_response_times(id_pcap, session)
+        pcap_modifications["failed_dns_query_answer"] = app_layer.AppLayer().get_failed_dns_query_answer(id_pcap, session)
+        pcap_modifications["failed_dns_answer_time"] = app_layer.AppLayer().get_failed_dns_answer_time(id_pcap, session)
 
 
         print (pcap_path," pcap_modifications['failed_checksums'] = ", str(pcap_modifications["failed_checksums"]) + "/" + str(packet_count))
@@ -117,4 +194,5 @@ class Detector():
         print (pcap_path," pcap_modifications['failed_arp_ips'] = ", str(pcap_modifications["failed_arp_ips"]) + "/" + str(packet_count))
         print (pcap_path," pcap_modifications['failed_macs_map'] = ", str(pcap_modifications["failed_macs_map"]) + "/" + str(packet_count))
         print (pcap_path," pcap_modifications['failed_response_times'] = ", str(pcap_modifications["failed_response_times"]) + "/" + str(packet_count))
-        print (pcap_path," pcap_modifications['failed_dns_query_response'] = ", str(pcap_modifications["failed_dns_query_response"]) + "/" + str(packet_count))
+        print (pcap_path," pcap_modifications['failed_dns_query_answer'] = ", str(pcap_modifications["failed_dns_query_answer"]) + "/" + str(packet_count))
+        print (pcap_path," pcap_modifications['failed_dns_answer_time'] = ", str(pcap_modifications["failed_dns_answer_time"]) + "/" + str(packet_count))
