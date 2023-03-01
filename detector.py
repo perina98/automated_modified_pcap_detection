@@ -20,7 +20,6 @@ from modules.db import Pcap, Packet
 from static import constants
 from scapy.all import *
 from scapy.layers.tls import *
-from tqdm import tqdm
 
 from sqlalchemy import create_engine, Column, Integer, String
 from sqlalchemy.orm import sessionmaker
@@ -128,8 +127,7 @@ class Detector():
 
                 packet_chunk.append(packet)
 
-                if len(packet_chunk) == 10000:
-                    print ("Saving 10000 packets")
+                if len(packet_chunk) == 1000:
                     self.save_packets(packet_chunk, id_pcap)
                     packet_chunk = []
 

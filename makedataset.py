@@ -204,6 +204,15 @@ def make_dataset_scapy_ext(pkts):
     wrpcap(OUTDIR+'/out-19.pcap', pkts)
     pkts = copy.deepcopy(orig)
 
+    #20 change IP address so that it comes before DNS answer
+    for pkt in pkts:
+        if pkt.haslayer(IP):
+            if pkt[IP].dst == '157.55.134.142':
+                pkt[IP].dst = '104.96.141.107'
+
+    wrpcap(OUTDIR+'/out-20.pcap', pkts)
+    pkts = copy.deepcopy(orig)
+
 
 
 def ensure_dir():
@@ -233,7 +242,6 @@ def run_all(pkts):
 if __name__ == '__main__':
     
     ensure_file()
-    ensure_dir()
 
     load_layer('tls')
     pkts = rdpcap(INFILE)

@@ -10,7 +10,6 @@
 ##################################################
 
 import json
-import dns.resolver
 from scapy.all import *
 from modules.db import Packet
 from modules import arp
@@ -51,6 +50,7 @@ class AppLayer():
     # check A and AAAA records and check if the IP address appreared before the pkt time
     def get_failed_dns_answer_time(self, id_pcap, session):
         pairs = self.get_dns_pairs(id_pcap, session)
+
         pairs = {k: v for k, v in pairs.items() if v['type'] == 1 or v['type'] == 28}
 
         ip_addresses = {}
@@ -61,15 +61,14 @@ class AppLayer():
                 ip_addresses[an['rdata']].append(pairs[pair]['time'])
         
         pkts = session.query(Packet).filter(Packet.id_pcap == id_pcap).all()
-        macs = arp.Arp().get_arp_macs(id_pcap, session)
 
         failed = 0
 
         for pkt in pkts:
-            if pkt.ip_src in ip_addresses and pkt.eth_src not in macs:
+            if pkt.ip_src in ip_addresses:
                 if pkt.packet_timestamp < min(ip_addresses[pkt.ip_src]):
                     failed += 1
-            if pkt.ip_dst in ip_addresses and pkt.eth_dst not in macs:
+            if pkt.ip_dst in ip_addresses:
                 if pkt.packet_timestamp < min(ip_addresses[pkt.ip_dst]):
                     failed += 1
 

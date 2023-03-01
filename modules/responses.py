@@ -40,6 +40,7 @@ class Responses():
 
                     current_diff = abs(streams[stream][i + 1].packet_timestamp - streams[stream][i].packet_timestamp)
                     if current_diff > stream_ref_time * 2:
+                        print (stream_ref_time, current_diff, streams[stream][i].packet_timestamp, streams[stream][i + 1].packet_timestamp)
                         failed += 1
 
         return failed
