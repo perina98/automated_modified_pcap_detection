@@ -66,7 +66,6 @@ class DataLinkLayer():
         failed = 0
         for ip in macs:
             if len(set(macs[ip])) > 1:
-                import pdb; pdb.set_trace()
                 failed += 1
         return failed
     
