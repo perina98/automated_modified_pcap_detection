@@ -1,2 +1,3 @@
+ENGINE = 'sqlite'
 DATABASE = 'db.db'
 SAVE_CHUNK_SIZE = 1000

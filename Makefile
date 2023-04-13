@@ -1,6 +1,3 @@
-#!/bin/bash
-export python:=python3
-
 .PHONY: all dataset detector single
 
 all : 
@@ -14,7 +11,7 @@ ifeq ($(OS),Windows_NT)
 else
 	mkdir -p dataset
 endif
-	python3 makedataset.py
+	python makedataset.py
 detector :
 	python main.py --dataset dataset
 single :
@@ -25,3 +22,5 @@ ifeq ($(OS),Windows_NT)
 else
 	rm -rf dataset
 endif
+install :
+	pip install -r requirements.txt

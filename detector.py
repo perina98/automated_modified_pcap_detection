@@ -9,7 +9,6 @@
 ## Year: 2022/2023
 ##################################################
 
-import argparse 
 import os
 import logging
 
@@ -26,14 +25,14 @@ from sqlalchemy.orm import sessionmaker
 logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
 
 class Detector():
-    def __init__(self):
+    def __init__(self, args=None):
         '''
         Initialize the detector
         Args:
 
         Returns:
         '''
-        self.args = self.get_args()
+        self.args = args
         self.db = db.Database()
 
         logging.basicConfig(level=self.args.log.upper(), format='%(message)s')
@@ -42,7 +41,7 @@ class Detector():
         load_layer('tls')
         self.log.debug("Ensuring database exists")
 
-        engine = create_engine('sqlite:///' + constants.DATABASE)
+        engine = create_engine(constants.ENGINE + ':///' + constants.DATABASE)
         self.db.ensure_db(engine, constants.DATABASE)
 
     def run(self):
@@ -52,7 +51,7 @@ class Detector():
 
         Returns:
         '''
-        engine = create_engine('sqlite:///' + constants.DATABASE)
+        engine = create_engine(constants.ENGINE + ':///' + constants.DATABASE)
         session = sessionmaker(bind=engine)()
         if self.args.dataset_dir:
             pcaps = self.get_dataset_pcaps()
@@ -83,22 +82,6 @@ class Detector():
         if num == '':
             return 0
         return int(num)
-
-    def get_args(self):
-        '''
-        Get arguments from command line
-        Args:
-
-        Returns:
-            args: Arguments from command line
-        '''
-        parser = argparse.ArgumentParser()
-        group = parser.add_mutually_exclusive_group(required=True)
-        group.add_argument("-i", "--input_pcap", metavar="PCAP_FILE_PATH", help="Input PCAP file path", required=False, type=str)
-        group.add_argument("-d", "--dataset_dir", metavar="DATASET_DIR", help="Run dataset on dataset directory", required=False, type=str)
-        parser.add_argument("-l", "--log", choices=["debug", "info", "warning", "error", "critical"], help="Log level", required=False, default="INFO")
-        args = parser.parse_args()
-        return args
 
     def get_dataset_pcaps(self):
         '''
@@ -148,7 +131,7 @@ class Detector():
 
         Returns:
         '''
-        engine = create_engine('sqlite:///' + constants.DATABASE)
+        engine = create_engine(constants.ENGINE + ':///' + constants.DATABASE)
         session = sessionmaker(bind=engine)()
         for packet in packet_chunk:
             self.db.save_packet(session, id_pcap, packet)
@@ -249,7 +232,7 @@ class Detector():
             for key in packet:
                 pcap_modifications[key] += packet[key]
 
-        engine = create_engine('sqlite:///' + constants.DATABASE)
+        engine = create_engine(constants.ENGINE + ':///' + constants.DATABASE)
         session = sessionmaker(bind=engine)()
 
         app_layer_mod = app_layer.AppLayer(id_pcap, session)
@@ -281,6 +264,11 @@ class Detector():
 
         Returns:
         '''
+
+        '''
+        Create queues and processes
+        Start n-1 process workers and 1 save worker
+        '''
         in_queue = multiprocessing.JoinableQueue()
         save_queue = multiprocessing.JoinableQueue()
         num_processes = multiprocessing.cpu_count() - 1
@@ -301,7 +289,10 @@ class Detector():
         for packet in pkts:
             in_queue.put(packet)
             save_queue.put(packet)
-            
+        
+        '''
+        Put None in queues to signal workers to finish
+        '''
         for i in range(num_processes):
             in_queue.put(None)
         save_queue.put(None)
