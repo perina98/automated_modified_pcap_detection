@@ -1,9 +1,10 @@
-.PHONY: all dataset detector single
+PYTHON := python
+
+.PHONY: all dataset run_dataset single
 
 all : 
-	@$(MAKE) -s clean
 	@$(MAKE) -s dataset
-	@$(MAKE) -s detector
+	@$(MAKE) -s run_dataset
 
 dataset : clean
 ifeq ($(OS),Windows_NT)
@@ -11,11 +12,11 @@ ifeq ($(OS),Windows_NT)
 else
 	mkdir -p dataset
 endif
-	python makedataset.py
-detector :
-	python main.py --dataset dataset
+	$(PYTHON) makedataset.py
+run_dataset :
+	$(PYTHON) main.py --dataset dataset -l debug
 single :
-	python main.py --input_pcap dataset/out-19.pcap -l debug
+	$(PYTHON) main.py --input_pcap input.pcap -l debug
 clean :
 ifeq ($(OS),Windows_NT)
 	@if exist dataset rmdir /s /q dataset

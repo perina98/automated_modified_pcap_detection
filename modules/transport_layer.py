@@ -1,7 +1,7 @@
 ##################################################
-## This modules checks the response times between packets in one stream
+## This module checks transport layer for any inconsistencies
 ##################################################
-## File: responses.py
+## File: transport_layer.py
 ## Author: Lukáš Perina
 ## Email: 527341@mail.muni.cz
 ## Programme: FI N-SWE Software Engineering
@@ -10,23 +10,36 @@
 ##################################################
 
 from scapy.all import *
-from modules.db import Packet
+from database import Packet
+import modules.functions as functions
 
-class Responses():
-    def get_tcp_streams(self, pkts):
-        streams = {}
-        for row in pkts:
-            if row.type == 2048 and row.protocol == 6:
-                key = (row.ip_src, row.ip_dst) if (row.ip_src, row.ip_dst) in streams else (row.ip_dst, row.ip_src)
-                if key not in streams:
-                    streams[key] = [row]
-                else:
-                    streams[key].append(row)
-        return streams
-        
+class TransportLayer():
+    '''
+    Class for checking transport layer for any inconsistencies
+    '''
+    def __init__(self, id_pcap, session):
+        '''
+        Constructor
+        Args:
+            id_pcap (int): id of the pcap file in the database
+            session (mixed): database session
 
-    def get_failed_response_times(self, id_pcap, session):
-        streams = self.get_tcp_streams(session.query(Packet).filter(Packet.id_pcap == id_pcap).all())
+        Returns:
+            None
+        '''
+        self.id_pcap = id_pcap
+        self.session = session
+        self.functions =  functions.Functions(id_pcap, session)
+    
+    def get_failed_response_times(self):
+        '''
+        Check if the response time is more than 2x the average response time
+        Args:
+
+        Returns:
+            None
+        '''
+        streams = self.functions.get_tcp_streams(self.session.query(Packet).filter(Packet.id_pcap == self.id_pcap).all())
         failed = 0
 
         for stream in streams:
@@ -43,4 +56,3 @@ class Responses():
                         failed += 1
 
         return failed
-        

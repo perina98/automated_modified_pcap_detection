@@ -1,5 +1,5 @@
 ##################################################
-## This modules ensures database and loads pcap packets to this database
+## This modules ensures database exists and loads pcap packets to this database
 ##################################################
 ## File: db.py
 ## Author: Lukáš Perina
@@ -13,52 +13,57 @@ import os
 import json
 from scapy.all import *
 from scapy.layers.tls import *
-from sqlalchemy import Column, Integer, String, ForeignKey, Double
-from sqlalchemy.orm import relationship
-from sqlalchemy.ext.declarative import declarative_base
 
-Base = declarative_base()
-
-class Packet(Base):
-    __tablename__ = 'packet'
-    id_packet = Column(Integer, primary_key=True)
-    packet_timestamp = Column(Double)
-    type = Column(Integer)
-    protocol = Column(Integer)
-    ip_src = Column(String)
-    ip_dst = Column(String)
-    port_src = Column(Integer)
-    port_dst = Column(Integer)
-    seq = Column(Integer)
-    ack = Column(Integer)
-    window = Column(Integer)
-    eth_src = Column(String)
-    eth_dst = Column(String)
-    id_pcap = Column(Integer, ForeignKey('pcap.id_pcap'))
-    length = Column(Integer)
-    dns = Column(String)
-    pcap = relationship("Pcap", back_populates="packets")
-
-class Pcap(Base):
-    __tablename__ = 'pcap'
-    id_pcap = Column(Integer, primary_key=True)
-    path = Column(String)
-    packets = relationship("Packet", order_by=Packet.id_packet, back_populates="pcap")
+from database import Packet, Pcap
 
 class Database():
-    # create database if not exists
+    '''
+    Main database handler class
+    Args:
+
+    Returns:
+    '''
     def ensure_db(self, engine, database):
+        '''
+        Ensure database exists and create tables if not
+        Args:
+            engine: sqlalchemy engine
+            database: database path
+
+        Returns:
+        '''
         if os.path.exists(database):
             os.remove(database)
-        Base.metadata.create_all(engine)
+        Packet.metadata.create_all(engine)
+        Pcap.metadata.create_all(engine)
 
     def save_pcap(self, session, path):
+        '''
+        Save pcap file info to database
+        Args:
+            session: sqlalchemy session
+            path: path to pcap file
+
+        Returns:
+            id_pcap: id of saved pcap file
+        '''
         new_pcap = Pcap(path=path)
         session.add(new_pcap)
         session.commit()
         return new_pcap.id_pcap
 
     def save_packet(self, session, id_pcap, pkt):
+        '''
+        Save packet info to database
+        Args:
+            session: sqlalchemy session
+            id_pcap: id of pcap file
+            pkt: scapy packet
+
+        Returns:
+        '''
+
+        # packet data structure
         pkt_data = {
             'protocol': None,
             'type': None,

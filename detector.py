@@ -14,7 +14,7 @@ import logging
 
 import multiprocessing
 
-from modules import checksums, protocols, db, responses, app_layer, datalink_layer
+from modules import link_layer, internet_layer, transport_layer, application_layer, misc, db
 from static import constants
 from scapy.all import *
 from scapy.layers.tls import *
@@ -25,9 +25,16 @@ from sqlalchemy.orm import sessionmaker
 logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
 
 class Detector():
+    '''
+    Main detector class that handles the logic and calls other modules
+    Args:
+
+    Returns:
+    '''
     def __init__(self, args=None):
         '''
         Initialize the detector
+        Initialize database, logging and load layers
         Args:
 
         Returns:
@@ -39,6 +46,7 @@ class Detector():
         self.log = logging.getLogger(__name__)
 
         load_layer('tls')
+
         self.log.debug("Ensuring database exists")
 
         engine = create_engine(constants.ENGINE + ':///' + constants.DATABASE)
@@ -47,6 +55,7 @@ class Detector():
     def run(self):
         '''
         Run the detector, either on dataset or on single pcap file
+        Creates session, saves pcap info to database and calls check_pcap function
         Args:
 
         Returns:
@@ -70,8 +79,7 @@ class Detector():
     
     def get_pcap_packets_count(self, pcap_path):
         '''
-        Get number of packets in pcap file
-        Using capinfos from tshark
+        Get number of packets in pcap file using capinfos from tshark
         Args:
             pcap_path (str): Path to pcap file
 
@@ -99,27 +107,22 @@ class Detector():
         self.log.debug("Found " + str(len(pcaps)) + " pcaps")
         return pcaps
 
-    def process_packet(self, packet, checksum_mod, protocol_mod):
+    def process_packet(self, packet, miscellaneous_mod):
         '''
         Process packet and check for modifications
         Args:
             packet (scapy packet): Packet to process
             checksum_mod (Checksums): Checksums module
-            protocol_mod (Protocols): Protocols module
+            transport_layer_mod (Protocols): Protocols module
 
         Returns:
             dict: Dictionary of modifications
         '''
         pcap_modifications = {
-            'failed_checksums': 0,
-            'failed_protocols': 0,
+            'failed_checksums': int(miscellaneous_mod.check_checksum(packet)),
+            'failed_protocols': int(miscellaneous_mod.check_protocol(packet)),
         } 
         
-        if checksum_mod.check_checksum(packet):
-            pcap_modifications["failed_checksums"] += 1
-        if protocol_mod.check_protocol(packet):
-            pcap_modifications["failed_protocols"] += 1
-
         return pcap_modifications
         
     def save_packets(self, packet_chunk, id_pcap):
@@ -147,21 +150,20 @@ class Detector():
 
         Returns:
         '''
-        checksum_mod = checksums.Checksums()
-        protocol_mod = protocols.Protocols()
+        miscellaneous_mod = misc.Miscellaneous()
         while True:
             packet = in_queue.get()
             if packet is None:
                 in_queue.task_done()
                 break
 
-            processed_packet = self.process_packet(packet, checksum_mod, protocol_mod)
+            processed_packet = self.process_packet(packet, miscellaneous_mod)
             shared_list.append(processed_packet)
             in_queue.task_done()
 
     def save_worker(self, save_queue, id_pcap):
         '''
-        Save packets in queue
+        Save packets in queue for each chunk size of SAVE_CHUNK_SIZE packets
         Args:
             save_queue (multiprocessing queue): Queue with packets to save
             id_pcap (int): Id of pcap file
@@ -175,88 +177,20 @@ class Detector():
                 save_queue.task_done()
                 self.save_packets(packet_chunk, id_pcap)
                 break
+
             save_queue.task_done()
 
             packet_chunk.append(packet)
 
             if len(packet_chunk) == constants.SAVE_CHUNK_SIZE:
-                self.log.debug("Saving packets of chunk size " + str(constants.SAVE_CHUNK_SIZE))
+                self.log.debug("Saving packets of chunk size " + str(len(packet_chunk)))
                 self.save_packets(packet_chunk, id_pcap)
                 packet_chunk = []
 
-    def print_results(self, pcap_path, packet_count, pcap_modifications):
+    def run_processes(self, pcap_path, id_pcap, shared_list):
         '''
-        Print results of pcap file
-        Args:
-            pcap_path (str): Path to pcap file
-            packet_count (int): Number of packets in pcap file
-            pcap_modifications (dict): Dictionary of modifications
+        Manage multiprocessing, start processes and initialize queues
 
-        Returns:
-        '''
-        keys = pcap_modifications.keys()
-
-        for key in keys:
-            print (pcap_path," pcap_modifications['"+key+"'] = ", str(pcap_modifications[key]) + "/" + str(packet_count))
-
-    # read pcap file and check if it is modified
-    def check_pcap(self, pcap_path, id_pcap):
-        '''
-        Check pcap file for modifications
-        Args:
-            pcap_path (str): Path to pcap file
-            id_pcap (int): Id of pcap file
-
-        Returns:
-        '''
-        packet_count = self.get_pcap_packets_count(self.args.input_pcap)
-
-        pcap_modifications = {
-            'failed_checksums': 0,
-            'failed_protocols': 0,
-            'failed_arp_ips': 0,
-            'failed_macs_map': 0,
-            'failed_response_times': 0,
-            'failed_dns_query_answer': 0,
-            'failed_dns_answer_time': 0,
-        }
-
-        
-        manager = multiprocessing.Manager()
-        shared_list = manager.list([])
-
-        self.manage_multiprocessing(pcap_path, id_pcap, shared_list)
-
-        self.log.debug("Accumulating results")
-        for packet in shared_list:
-            for key in packet:
-                pcap_modifications[key] += packet[key]
-
-        engine = create_engine(constants.ENGINE + ':///' + constants.DATABASE)
-        session = sessionmaker(bind=engine)()
-
-        app_layer_mod = app_layer.AppLayer(id_pcap, session)
-        datalink_layer_mod = datalink_layer.DataLinkLayer(id_pcap, session)
-
-        # run datalink layer tests
-        self.log.debug("Running data link layer tests")
-        pcap_modifications["failed_arp_ips"] = datalink_layer_mod.get_failed_arp_ips()
-        pcap_modifications["failed_macs_map"] = datalink_layer_mod.get_failed_mac_maps()
-
-        # run app layer tests
-        self.log.debug("Running app layer tests")
-        pcap_modifications["failed_dns_query_answer"] = app_layer_mod.get_failed_dns_query_answer()
-        pcap_modifications["failed_dns_answer_time"] = app_layer_mod.get_failed_dns_answer_time()
-
-
-        # run response times tests
-        pcap_modifications["failed_response_times"] = responses.Responses().get_failed_response_times(id_pcap, session)
-
-        self.print_results(pcap_path, packet_count, pcap_modifications)
-
-    def manage_multiprocessing(self, pcap_path, id_pcap, shared_list):
-        '''
-        Manage multiprocessing
         Args:
             pcap_path (str): Path to pcap file
             id_pcap (int): Id of pcap file
@@ -272,11 +206,14 @@ class Detector():
         in_queue = multiprocessing.JoinableQueue()
         save_queue = multiprocessing.JoinableQueue()
         num_processes = multiprocessing.cpu_count() - 1
+
+        self.log.debug("Detected %d cpus", multiprocessing.cpu_count())
+
         workers = []
         for i in range(num_processes):
             process = multiprocessing.Process(target=self.process_worker, args=(in_queue, shared_list))
             workers.append(process)
-            self.log.debug("Starting process worker %d", i)
+            self.log.debug("Starting process worker %d", i + 1)
             process.start()
 
         process = multiprocessing.Process(target=self.save_worker, args=(save_queue, id_pcap))
@@ -301,4 +238,70 @@ class Detector():
         for process in workers:
             process.join()
 
-    
+    # read pcap file and check if it is modified
+    def check_pcap(self, pcap_path, id_pcap):
+        '''
+        Check pcap file for modifications
+        Args:
+            pcap_path (str): Path to pcap file
+            id_pcap (int): Id of pcap file
+
+        Returns:
+        '''
+        packet_count = self.get_pcap_packets_count(pcap_path)
+
+        pcap_modifications = {
+            'failed_checksums': 0,
+            'failed_protocols': 0,
+            'failed_arp_ips': 0,
+            'failed_macs_map': 0,
+            'failed_response_times': 0,
+            'failed_dns_query_answer': 0,
+            'failed_dns_answer_time': 0,
+        }
+        
+        manager = multiprocessing.Manager()
+        shared_list = manager.list([])
+
+        self.run_processes(pcap_path, id_pcap, shared_list)
+
+        self.log.debug("Accumulating results")
+        for packet in shared_list:
+            for key in packet:
+                pcap_modifications[key] += packet[key]
+
+        engine = create_engine(constants.ENGINE + ':///' + constants.DATABASE)
+        session = sessionmaker(bind=engine)()
+
+        link_layer_mod = link_layer.LinkLayer(id_pcap, session)
+        internet_layer_mod = internet_layer.InternetLayer(id_pcap, session)
+        transport_layer_mod = transport_layer.TransportLayer(id_pcap, session)
+        application_layer_mod = application_layer.ApplicationLayer(id_pcap, session)
+
+        self.log.debug("Running link layer tests")
+        pcap_modifications["failed_arp_ips"] = link_layer_mod.get_failed_arp_ips()
+        pcap_modifications["failed_macs_map"] = link_layer_mod.get_failed_mac_maps()
+
+        self.log.debug("Running app layer tests")
+        pcap_modifications["failed_dns_query_answer"] = application_layer_mod.get_failed_dns_query_answer()
+        pcap_modifications["failed_dns_answer_time"] = application_layer_mod.get_failed_dns_answer_time()
+
+        self.log.debug("Running response times tests")
+        pcap_modifications["failed_response_times"] = transport_layer_mod.get_failed_response_times()
+
+        self.print_results(pcap_path, packet_count, pcap_modifications)
+
+    def print_results(self, pcap_path, packet_count, pcap_modifications):
+        '''
+        Print results of pcap file
+        Args:
+            pcap_path (str): Path to pcap file
+            packet_count (int): Number of packets in pcap file
+            pcap_modifications (dict): Dictionary of modifications
+
+        Returns:
+        '''
+        keys = pcap_modifications.keys()
+
+        for key in keys:
+            print (pcap_path," pcap_modifications['"+key+"'] = ", str(pcap_modifications[key]) + "/" + str(packet_count))

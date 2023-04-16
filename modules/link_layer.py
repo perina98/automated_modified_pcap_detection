@@ -1,7 +1,7 @@
 ##################################################
-## This modules checks data link layer for any inconsistencies
+## This module checks link layer related information for any inconsistencies
 ##################################################
-## File: app_layer.py
+## File: link_layer.py
 ## Author: Lukáš Perina
 ## Email: 527341@mail.muni.cz
 ## Programme: FI N-SWE Software Engineering
@@ -10,11 +10,12 @@
 ##################################################
 
 from scapy.all import *
-from modules.db import Packet
+from database import Packet
+import modules.functions as functions
 
-class DataLinkLayer():
+class LinkLayer():
     '''
-    Class for checking data link layer for any inconsistencies
+    Class for checking link layer for any inconsistencies
     '''
     def __init__(self, id_pcap, session):
         '''
@@ -28,30 +29,7 @@ class DataLinkLayer():
         '''
         self.id_pcap = id_pcap
         self.session = session
-
-    def get_macs(self):
-        '''
-        Get all MAC addresses and their IP addresses from the pcap file
-        Args:
-
-        Returns:
-            dict: dictionary of MAC addresses and their IP addresses
-        '''
-        pkts = self.session.query(Packet).filter(Packet.id_pcap == self.id_pcap).all()
-        macs = {}
-        for pkt in pkts:
-            if pkt.type == 2048:
-                if macs.get(pkt.ip_src) == None:
-                    macs[pkt.ip_src] = [pkt.eth_src]
-                else:
-                    macs[pkt.ip_src].append(pkt.eth_src)
-
-                if macs.get(pkt.ip_dst) == None:
-                    macs[pkt.ip_dst] = [pkt.eth_dst]
-                else:
-                    macs[pkt.ip_dst].append(pkt.eth_dst)
-
-        return macs
+        self.functions =  functions.Functions(id_pcap, session)
 
     def get_failed_mac_maps(self):
         '''
@@ -62,7 +40,7 @@ class DataLinkLayer():
         Returns:
             int: number of failed MAC address maps
         '''
-        macs = self.get_macs()
+        macs = self.functions.get_macs()
         failed = 0
         for ip in macs:
             if len(set(macs[ip])) > 1:
@@ -97,21 +75,3 @@ class DataLinkLayer():
                 failed_macs += 1
         
         return failed_macs
-    
-    def get_arp_macs(self):
-        '''
-        Get all MAC addresses from ARP packets
-        Args:
-
-        Returns:
-            set: set of MAC addresses
-        '''
-        arp_macs = []
-        pkts = self.session.query(Packet).filter(Packet.id_pcap == self.id_pcap).all()
-
-        for pkt in pkts:
-            if pkt.type == 2054:
-                arp_macs.append(pkt.eth_src)
-                arp_macs.append(pkt.eth_dst)
-                
-        return set(arp_macs)
