@@ -31,7 +31,7 @@ class TransportLayer():
         self.session = session
         self.functions =  functions.Functions(id_pcap, session)
     
-    def get_failed_response_times(self):
+    def get_inconsistent_interpacket_gaps(self):
         '''
         Check if the response time is more than 2x the average response time
         Args:

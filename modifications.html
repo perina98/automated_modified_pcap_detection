@@ -204,8 +204,8 @@
                     <td class="tg-btxf">-</td>
                     <td class="tg-btxf">-</td>
                     <td class="tg-btxf">-</td>
-                    <td class="tg-btxf">IPv4/IPv6/TCP/UDP: Invalid checksum</td>
-                    <td class="tg-btxf">-</td>
+                    <td class="tg-btxf">IPv4/IPv6/TCP/UDP/ICMP: Invalid checksum</td>
+                    <td class="tg-btxf">misc.py: check_checksum()</td>
                     <td class="tg-btxf">-</td>
                     <td class="tg-btxf">-</td>
                 </tr>
@@ -240,7 +240,7 @@
                     <td class="tg-btxf">
                         IPv4/IPv6: Inconsistent interpacket gaps
                     </td>
-                    <td class="tg-btxf">-</td>
+                    <td class="tg-btxf">transport_layer.py: get_inconsistent_interpacket_gaps</td>
                     <td class="tg-btxf">-</td>
                     <td class="tg-btxf">-</td>
                     <td class="tg-btxf">
@@ -281,13 +281,13 @@
                     <td class="tg-btxf">
                         ARP: Missing translation of a local host address
                     </td>
-                    <td class="tg-btxf">-</td>
+                    <td class="tg-btxf">link_layer.py: get_missing_arp_traffic()</td>
                     <td class="tg-btxf">-</td>
                     <td class="tg-btxf">-</td>
                     <td class="tg-btxf">
                         IPv4/IPv6: Invalid data at packet end
                     </td>
-                    <td class="tg-btxf">-</td>
+                    <td class="tg-btxf">misc.py: check_invalid_payload()</td>
                     <td class="tg-btxf">-</td>
                     <td class="tg-btxf">-</td>
                 </tr>
@@ -301,7 +301,7 @@
                     <td class="tg-btxf">-</td>
                     <td class="tg-0pky">-</td>
                     <td class="tg-0pky">IPv4/IPv6: Incorrect packet length</td>
-                    <td class="tg-btxf">-</td>
+                    <td class="tg-btxf">misc.py: check_packet_length()</td>
                     <td class="tg-0pky">-</td>
                     <td class="tg-0pky">-</td>
                 </tr>
@@ -313,7 +313,7 @@
                     <td class="tg-btxf">
                         ETHERNET: Different addresses for the same IP address
                     </td>
-                    <td class="tg-btxf">-</td>
+                    <td class="tg-btxf">link_layer.py: get_inconsistent_mac_maps()</td>
                     <td class="tg-btxf">-</td>
                     <td class="tg-btxf">-</td>
                     <td class="tg-btxf">
@@ -352,9 +352,9 @@
                     <td class="tg-buh4">
                         DHCP: Offer message for a host without connections
                     </td>
-                    <td class="tg-btxf">-</td>
-                    <td class="tg-buh4">-</td>
-                    <td class="tg-buh4">-</td>
+                    <td class="tg-btxf">?</td>
+                    <td class="tg-buh4">?</td>
+                    <td class="tg-buh4">?</td>
                 </tr>
                 <tr>
                     <td class="tg-0pky"></td>
@@ -368,7 +368,7 @@
                     <td class="tg-0pky">
                         ARP: Translation of a local host address
                     </td>
-                    <td class="tg-btxf">-</td>
+                    <td class="tg-btxf">link_layer.py: get_lost_arp_traffic()</td>
                     <td class="tg-btxf">-</td>
                     <td class="tg-0pky">-</td>
                 </tr>
@@ -384,7 +384,7 @@
                     <td class="tg-btxf">
                         ARP: Responses from a host without connections
                     </td>
-                    <td class="tg-btxf">-</td>
+                    <td class="tg-btxf">link_layer.py: get_lost_arp_traffic()</td>
                     <td class="tg-btxf">-</td>
                     <td class="tg-btxf">-</td>
                 </tr>
@@ -404,14 +404,20 @@
             </thead>
             <tbody>
                 <tr>
-                    <td class="tg-btxf">Detect mismatched DNS query and answer</td>
+                    <td class="tg-btxf">Mismatched DNS query and answer</td>
                     <td class="tg-btxf">application_layer.py: get_mismatched_dns_query_answer()</td>
                     <td class="tg-btxf">-</td>
                     <td class="tg-btxf">-</td>
                 </tr>
                 <tr>
-                    <td class="tg-btxf">Detect mismatched DNS CNAME answer stack</td>
+                    <td class="tg-btxf">Mismatched DNS CNAME answer stack</td>
                     <td class="tg-btxf">application_layer.py: get_mismatched_dns_answer_stack()</td>
+                    <td class="tg-btxf">-</td>
+                    <td class="tg-btxf">-</td>
+                </tr>
+                <tr>
+                    <td class="tg-btxf">Usage of nonstandard protocols</td>
+                    <td class="tg-btxf">misc.py: check_protocol()</td>
                     <td class="tg-btxf">-</td>
                     <td class="tg-btxf">-</td>
                 </tr>

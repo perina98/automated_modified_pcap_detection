@@ -30,6 +30,7 @@ class ApplicationLayer():
         self.id_pcap = id_pcap
         self.session = session
         self.functions =  functions.Functions(id_pcap, session)
+        self.dns_pairs = self.functions.get_dns_pairs()
 
     def get_translation_of_unvisited_domains(self):
         '''
@@ -39,7 +40,6 @@ class ApplicationLayer():
         Returns:
             int: number of packets with translation of unvisited domains
         '''
-        dns_pairs = self.functions.get_dns_pairs()
 
         packets = self.session.query(Packet).filter(Packet.id_pcap == self.id_pcap).all()
 
@@ -47,7 +47,7 @@ class ApplicationLayer():
 
         failed_count = 0
 
-        for pair in dns_pairs.values():
+        for pair in self.dns_pairs.values():
             valid_answer = False
             has_ip_answer = False
             for answer in pair['answers']:
@@ -110,12 +110,10 @@ class ApplicationLayer():
         Returns:
             int: number of mismatched DNS query and answer pairs
         '''
-        pairs = self.functions.get_dns_pairs()
-
         failed = 0
 
-        for pair in pairs:
-            if pairs[pair]['query']['qname'] != pairs[pair]['answer_query']:
+        for pair in self.dns_pairs:
+            if self.dns_pairs[pair]['query']['qname'] != self.dns_pairs[pair]['answer_query']:
                 failed += 1
 
         return failed
@@ -132,14 +130,12 @@ class ApplicationLayer():
         Returns:
             int: number of mismatched DNS answer stacks
         '''
-        pairs = self.functions.get_dns_pairs()
-
         failed = 0
 
-        for pair in pairs:
+        for pair in self.dns_pairs:
             f = False
             cname_context = []
-            for idx,an in enumerate(pairs[pair]['answers']):
+            for idx,an in enumerate(self.dns_pairs[pair]['answers']):
                 if an['atype'] == 5:
                     cname_context.append(an['answer']['rdata'])
                     if idx == 0:
@@ -160,10 +156,8 @@ class ApplicationLayer():
         Returns:
             int: number of failed DNS query and answer pairs
         '''
-        pairs = self.functions.get_dns_pairs()
-
         # filter only A and AAAA records
-        pairs = {k: v for k, v in pairs.items() if v['qtype'] == 1 or v['qtype'] == 28}
+        pairs = {k: v for k, v in self.dns_pairs.items() if v['qtype'] == 1 or v['qtype'] == 28}
 
         ip_addresses = {}
         for pair in pairs:

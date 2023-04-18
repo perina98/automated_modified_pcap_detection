@@ -119,8 +119,10 @@ class Detector():
             dict: Dictionary of modifications
         '''
         pcap_modifications = {
-            'failed_checksums': int(miscellaneous_mod.check_checksum(packet)),
-            'failed_protocols': int(miscellaneous_mod.check_protocol(packet)),
+            'mismatched_checksums': int(miscellaneous_mod.check_checksum(packet)),
+            'mismatched_protocols': int(miscellaneous_mod.check_protocol(packet)),
+            'incorrect_packet_length': int(miscellaneous_mod.check_packet_length(packet)),
+            'invalid_packet_payload': int(miscellaneous_mod.check_invalid_payload(packet)),
         } 
         
         return pcap_modifications
@@ -249,16 +251,18 @@ class Detector():
         packet_count = self.get_pcap_packets_count(pcap_path)
 
         pcap_modifications = {
-            'failed_checksums': 0,
-            'failed_protocols': 0,
-            'failed_arp_ips': 0,
-            'failed_macs_map': 0,
-            'failed_response_times': 0,
+            'mismatched_checksums': 0,
+            'mismatched_protocols': 0,
+            'incorrect_packet_length': 0,
+            'missing_arp_traffic': 0,
+            'inconsistent_mac_maps': 0,
+            'inconsistent_interpacket_gaps': 0,
             'mismatched_dns_query_answer': 0,
             'mismatched_dns_answer_stack': 0,
             'missing_translation_of_visited_domain': 0,
             'translation_of_unvisited_domains': 0,
             'incomplete_ftp': 0,
+            'invalid_packet_payload': 0,
         }
         
         manager = multiprocessing.Manager()
@@ -280,11 +284,12 @@ class Detector():
         application_layer_mod = application_layer.ApplicationLayer(id_pcap, session)
 
         self.log.debug("Running link layer tests")
-        pcap_modifications["failed_arp_ips"] = link_layer_mod.get_failed_arp_ips()
-        pcap_modifications["failed_macs_map"] = link_layer_mod.get_failed_mac_maps()
+        pcap_modifications["missing_arp_traffic"] = link_layer_mod.get_missing_arp_traffic()
+        pcap_modifications["inconsistent_mac_maps"] = link_layer_mod.get_inconsistent_mac_maps()
+        pcap_modifications["lost_arp_traffic"] = link_layer_mod.get_lost_arp_traffic()
 
         self.log.debug("Running transport layer tests")
-        pcap_modifications["failed_response_times"] = transport_layer_mod.get_failed_response_times()
+        pcap_modifications["inconsistent_interpacket_gaps"] = transport_layer_mod.get_inconsistent_interpacket_gaps()
 
         self.log.debug("Running app layer tests")
         pcap_modifications["mismatched_dns_query_answer"] = application_layer_mod.get_mismatched_dns_query_answer()
@@ -307,6 +312,10 @@ class Detector():
         Returns:
         '''
         keys = pcap_modifications.keys()
+
+        print ("")
+        print ("=== Results come now ===")
+        print ("")
 
         for key in keys:
             print (pcap_path," pcap_modifications['"+key+"'] = ", str(pcap_modifications[key]) + "/" + str(packet_count))

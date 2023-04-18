@@ -87,3 +87,77 @@ class Miscellaneous():
             modified = True
 
         return modified
+
+    def check_packet_length(self, pkt):
+        '''
+        Check if the packet length is correct
+        Args:
+            pkt (scapy packet): packet to check
+
+        Returns:
+            None
+        '''
+
+        length = len(pkt)
+        rawlen = 0
+
+        if pkt.haslayer(Raw):
+            rawlen = len(pkt[Raw])
+
+        if pkt.haslayer(Ether):
+            if len(pkt) != length:
+                return True
+        
+        # Ethernet header
+        length -= 14
+
+        if pkt.haslayer(IP):
+            # length - Ethernet header
+            if pkt[IP].len != length:
+                return True
+            
+            # IP header
+            length -= pkt[IP].ihl * 4
+
+        if pkt.haslayer(UDP):
+            if length != pkt[UDP].len:
+                return True
+            # UDP header
+            length -= 8
+
+        if pkt.haslayer(TCP):
+            if length != len(pkt[TCP]):
+                return True
+            # TCP header
+            length -= pkt[TCP].dataofs * 4
+
+        if pkt.haslayer(TLS):
+            # pkt[TLS].len is the length of the TLS record
+            # payload is the length of the TLS record payload
+            # 5 is the length of the TLS record header
+            payload = pkt[TLS].payload
+            if length != pkt[TLS].len + 5 + len(payload):
+                return True
+        
+        return False
+    
+    def check_invalid_payload(self, pkt):
+        '''
+        Check if the packet payload ends with multiple 0x00 bytes or if it ends with 16 same bytes
+        Args:
+            pkt (scapy packet): packet to check
+
+        Returns:
+            None
+        '''
+        if pkt.haslayer(Raw):
+            if pkt[Raw].load.endswith(b'\x00\x00\x00\x00\x00\x00\x00\x00'):
+                return True
+            
+            # check if last 16 bytes are the same
+            if len(pkt[Raw].load) >= 16:
+                last_16 = pkt[Raw].load[-16:]
+                if last_16 == last_16[0:1] * 16:
+                    return True
+            
+        return False

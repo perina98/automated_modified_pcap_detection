@@ -31,14 +31,14 @@ class LinkLayer():
         self.session = session
         self.functions =  functions.Functions(id_pcap, session)
 
-    def get_failed_mac_maps(self):
+    def get_inconsistent_mac_maps(self):
         '''
-        Get number of failed MAC address maps
+        Get number of inconsistent MAC address maps
         If there is more than one MAC address for one IP address, it is considered suspicious
         Args:
 
         Returns:
-            int: number of failed MAC address maps
+            int: number of inconsistent MAC address maps
         '''
         macs = self.functions.get_macs()
         failed = 0
@@ -47,11 +47,38 @@ class LinkLayer():
                 failed += 1
         return failed
     
-    def get_failed_arp_ips(self):
+    def get_missing_arp_traffic(self):
         '''
-        Get number of failed ARP IP addresses
-        At least one of the communicating MAC addresses must be in ARP packets
-        If not, it is considered suspicious
+        Get number of missing ARP IP addresses
+        If the communication occurs, ARP traffic for the IP address should be present
+        Args:
+
+        Returns:
+            int: number of failed ARP IP addresses
+        '''
+        arp_macs = []
+        ip_macs = []
+        pkts = self.session.query(Packet).filter(Packet.id_pcap == self.id_pcap).all()
+
+        for pkt in pkts:
+            if pkt.type == 2054:
+                # ARP packet type, save MAC addresses
+                arp_macs.append(pkt.eth_src)
+                arp_macs.append(pkt.eth_dst)
+            if pkt.type == 2048:
+                ip_macs.append({'src': pkt.eth_src, 'dst': pkt.eth_dst})
+                
+        failed_macs = 0
+        arp_set = set(arp_macs)
+        for mac in ip_macs:
+            if mac['src'] not in arp_set and mac['dst'] not in arp_set:
+                failed_macs += 1
+        
+        return failed_macs
+    
+    def get_lost_arp_traffic(self):
+        '''
+        Get number of ARP traffic MAC addresses that are not used in IP traffic
         Args:
 
         Returns:
@@ -66,12 +93,14 @@ class LinkLayer():
                 arp_macs.append(pkt.eth_src)
                 arp_macs.append(pkt.eth_dst)
             if pkt.type == 2048:
-                ip_macs.append({'src': pkt.eth_src, 'dst': pkt.eth_dst})
+                ip_macs.append(pkt.eth_src)
+                ip_macs.append(pkt.eth_dst)
                 
         failed_macs = 0
         arp_set = set(arp_macs)
-        for mac in ip_macs:
-            if mac['src'] not in arp_set and mac['dst'] not in arp_set:
+        ip_macs_set = set(ip_macs)
+        for mac in arp_set:
+            if mac not in ip_macs_set:
                 failed_macs += 1
-        
+
         return failed_macs
