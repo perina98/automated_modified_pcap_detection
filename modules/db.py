@@ -109,7 +109,9 @@ class Database():
 
             if pkt[DNS].an:
                 an = []
-                for ans in pkt[DNS].an:
+                
+                for i in range(pkt[DNS].ancount):
+                    ans = pkt[DNS].an[i]
                     rrname = ans.rrname
                     rdata = ans.rdata
                     ptype = ans.type
@@ -123,7 +125,7 @@ class Database():
 
             dns_data['an'] = an
             pkt_data['dns'] = json.dumps(dns_data)
- 
+
         pkt_data['type'] = pkt.type
         pkt_data['eth_src'] = pkt[Ether].src
         pkt_data['eth_dst'] = pkt[Ether].dst

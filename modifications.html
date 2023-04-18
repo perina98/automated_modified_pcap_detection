@@ -3,9 +3,6 @@
     <head>
         <title>Modifications</title>
         <style>
-            table {
-                margin: 50px 150px;
-            }
             .tg {
                 border-collapse: collapse;
                 border-color: #ccc;
@@ -85,19 +82,19 @@
                     <td class="tg-btxf">
                         DNS: Translation of unvisited domain(s)
                     </td>
-                    <td class="tg-btxf">-</td>
-                    <td class="tg-btxf">-</td>
-                    <td class="tg-btxf">-</td>
-                    <td class="tg-btxf">
-                        DNS: Missing translation of visited domain(s)
-                    </td>
-                    <td class="tg-btxf">-</td>
+                    <td class="tg-btxf">application_layer.py: get_translation_of_unvisited_domains()</td>
                     <td class="tg-btxf">-</td>
                     <td class="tg-btxf">-</td>
                     <td class="tg-btxf">
                         DNS: Missing translation of visited domain(s)
                     </td>
+                    <td class="tg-btxf">application_layer.py: get_missing_translation_of_visited_domain()</td>
                     <td class="tg-btxf">-</td>
+                    <td class="tg-btxf">-</td>
+                    <td class="tg-btxf">
+                        DNS: Missing translation of visited domain(s)
+                    </td>
+                    <td class="tg-btxf">application_layer.py: get_missing_translation_of_visited_domain()</td>
                     <td class="tg-btxf">-</td>
                     <td class="tg-btxf">-</td>
                 </tr>
@@ -105,7 +102,7 @@
                     <td class="tg-0pky">
                         FTP: Only data transfer or control connection
                     </td>
-                    <td class="tg-btxf">-</td>
+                    <td class="tg-btxf">application_layer.py: get_incomplete_ftp()</td>
                     <td class="tg-0pky">-</td>
                     <td class="tg-0pky">-</td>
                     <td class="tg-0pky">
@@ -388,6 +385,33 @@
                         ARP: Responses from a host without connections
                     </td>
                     <td class="tg-btxf">-</td>
+                    <td class="tg-btxf">-</td>
+                    <td class="tg-btxf">-</td>
+                </tr>
+            </tbody>
+        </table>
+
+
+
+        <table class="tg" style="margin:50px auto;">
+            <thead>
+                <tr>
+                    <th class="tg-0pky bold">Name</th>
+                    <th class="tg-0pky bold">Function in code</th>
+                    <th class="tg-0pky bold">Impact</th>
+                    <th class="tg-0pky bold">Dataset</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="tg-btxf">Detect mismatched DNS query and answer</td>
+                    <td class="tg-btxf">application_layer.py: get_mismatched_dns_query_answer()</td>
+                    <td class="tg-btxf">-</td>
+                    <td class="tg-btxf">-</td>
+                </tr>
+                <tr>
+                    <td class="tg-btxf">Detect mismatched DNS CNAME answer stack</td>
+                    <td class="tg-btxf">application_layer.py: get_mismatched_dns_answer_stack()</td>
                     <td class="tg-btxf">-</td>
                     <td class="tg-btxf">-</td>
                 </tr>

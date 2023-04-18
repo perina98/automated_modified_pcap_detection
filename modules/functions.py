@@ -96,15 +96,23 @@ class Functions():
                 dns = json.loads(pkt.dns)
                 if dns['id'] not in pairs:
                     pairs[dns['id']] = {}
-                    pairs[dns['id']]['time'] = pkt.packet_timestamp
                 if dns['an']:
-                    pairs[dns['id']]['answer'] = dns['an']
+                    pairs[dns['id']]['answers'] = []
+                    for answer in dns['an']:
+                        a = {}
+                        a['answer'] = answer
+                        a['atype'] = answer['type']
+                        a['atime'] = pkt.packet_timestamp
+                        pairs[dns['id']]['answers'].append(a)
+                    pairs[dns['id']]['answer_query'] = dns['qd']['qname'] if dns['qd'] is not None else ''
                 else:
                     pairs[dns['id']]['query'] = dns['qd']
-                    pairs[dns['id']]['type'] = dns['qd']['qtype'] if dns['qd'] is not None else 0
+                    pairs[dns['id']]['qtype'] = dns['qd']['qtype'] if dns['qd'] is not None else 0
+                    pairs[dns['id']]['qtime'] = pkt.packet_timestamp
+
 
         # filter only pairs with query and answer
-        return {key: value for key, value in pairs.items() if 'query' in value and 'answer' in value}
+        return {key: value for key, value in pairs.items() if 'query' in value and 'answers' in value}
 
     def get_macs(self):
         '''

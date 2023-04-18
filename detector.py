@@ -227,9 +227,7 @@ class Detector():
             in_queue.put(packet)
             save_queue.put(packet)
         
-        '''
-        Put None in queues to signal workers to finish
-        '''
+        # Put None in queues to signal workers to finish
         for i in range(num_processes):
             in_queue.put(None)
         save_queue.put(None)
@@ -256,8 +254,11 @@ class Detector():
             'failed_arp_ips': 0,
             'failed_macs_map': 0,
             'failed_response_times': 0,
-            'failed_dns_query_answer': 0,
-            'failed_dns_answer_time': 0,
+            'mismatched_dns_query_answer': 0,
+            'mismatched_dns_answer_stack': 0,
+            'missing_translation_of_visited_domain': 0,
+            'translation_of_unvisited_domains': 0,
+            'incomplete_ftp': 0,
         }
         
         manager = multiprocessing.Manager()
@@ -282,12 +283,16 @@ class Detector():
         pcap_modifications["failed_arp_ips"] = link_layer_mod.get_failed_arp_ips()
         pcap_modifications["failed_macs_map"] = link_layer_mod.get_failed_mac_maps()
 
-        self.log.debug("Running app layer tests")
-        pcap_modifications["failed_dns_query_answer"] = application_layer_mod.get_failed_dns_query_answer()
-        pcap_modifications["failed_dns_answer_time"] = application_layer_mod.get_failed_dns_answer_time()
-
-        self.log.debug("Running response times tests")
+        self.log.debug("Running transport layer tests")
         pcap_modifications["failed_response_times"] = transport_layer_mod.get_failed_response_times()
+
+        self.log.debug("Running app layer tests")
+        pcap_modifications["mismatched_dns_query_answer"] = application_layer_mod.get_mismatched_dns_query_answer()
+        pcap_modifications["mismatched_dns_answer_stack"] = application_layer_mod.get_mismatched_dns_answer_stack()
+        pcap_modifications["missing_translation_of_visited_domain"] = application_layer_mod.get_missing_translation_of_visited_domain()
+        pcap_modifications["translation_of_unvisited_domains"] = application_layer_mod.get_translation_of_unvisited_domains()
+        pcap_modifications["incomplete_ftp"] = application_layer_mod.get_incomplete_ftp()
+
 
         self.print_results(pcap_path, packet_count, pcap_modifications)
 
