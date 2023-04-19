@@ -30,7 +30,6 @@ class Functions():
         '''
         self.id_pcap = id_pcap
         self.session = session
-        pass
 
     def is_private_ip(self, ip_addr):
         '''
@@ -169,6 +168,25 @@ class Functions():
         for row in pkts:
             if row.type == 2048 and row.protocol == 6:
                 key = (row.ip_src, row.ip_dst) if (row.ip_src, row.ip_dst) in streams else (row.ip_dst, row.ip_src)
+                if key not in streams:
+                    streams[key] = [row]
+                else:
+                    streams[key].append(row)
+        return streams
+    
+    def get_communication_channels(self, pkts):
+        '''
+        Get communication channels from the pcap file
+        Args:
+            pkts (list): list of packets
+
+        Returns:
+            None
+        '''
+        streams = {}
+        for row in pkts:
+            if row.type == 2048 and row.protocol == 6:
+                key = (row.ip_src, row.ip_dst)
                 if key not in streams:
                     streams[key] = [row]
                 else:

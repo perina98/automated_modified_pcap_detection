@@ -114,7 +114,7 @@
                     <td class="tg-0pky">
                         DNS: Translation of unvisited domain(s)
                     </td>
-                    <td class="tg-0pky">-</td>
+                    <td class="tg-btxf">application_layer.py: get_translation_of_unvisited_domains()</td>
                     <td class="tg-btxf">-</td>
                     <td class="tg-0pky">-</td>
                 </tr>
@@ -147,9 +147,9 @@
                     <td class="tg-btxf">-</td>
                     <td class="tg-0pky">-</td>
                     <td class="tg-0pky">TLS: Invalid certificate</td>
-                    <td class="tg-btxf">-</td>
-                    <td class="tg-btxf">-</td>
-                    <td class="tg-0pky">-</td>
+                    <td class="tg-btxf">?</td>
+                    <td class="tg-btxf">?</td>
+                    <td class="tg-btxf">?</td>
                 </tr>
                 <tr>
                     <td class="tg-btxf">
@@ -159,7 +159,7 @@
                     <td class="tg-btxf">?</td>
                     <td class="tg-btxf">?</td>
                     <td class="tg-btxf">TLS: Different ciphersuite list</td>
-                    <td class="tg-btxf">-</td>
+                    <td class="tg-btxf">transport_layer.py: get_mismatched_ciphers()</td>
                     <td class="tg-btxf">-</td>
                     <td class="tg-btxf">-</td>
                     <td class="tg-btxf">
@@ -173,15 +173,15 @@
                     <td class="tg-0pky">
                         IPv4/IPv6: Sudden drop in traffic for a given address
                     </td>
-                    <td class="tg-btxf">-</td>
-                    <td class="tg-btxf">-</td>
-                    <td class="tg-0pky">-</td>
+                    <td class="tg-btxf">?</td>
+                    <td class="tg-btxf">?</td>
+                    <td class="tg-btxf">?</td>
                     <td class="tg-0pky">
                         TCP: Various window sizes for the same IP address
                     </td>
-                    <td class="tg-btxf">-</td>
-                    <td class="tg-btxf">-</td>
-                    <td class="tg-0pky">-</td>
+                    <td class="tg-btxf">?</td>
+                    <td class="tg-btxf">?</td>
+                    <td class="tg-btxf">?</td>
                     <td class="tg-0pky">
                         TCP: Inconsistent protocol behaviour
                     </td>
@@ -201,7 +201,7 @@
                         TCP: Various maximum segment sizes for the same IP
                         address
                     </td>
-                    <td class="tg-btxf">-</td>
+                    <td class="tg-btxf">transport_layer.py: get_inconsistent_mss()</td>
                     <td class="tg-btxf">-</td>
                     <td class="tg-btxf">-</td>
                     <td class="tg-btxf">IPv4/IPv6/TCP/UDP/ICMP: Invalid checksum</td>
@@ -220,15 +220,15 @@
                     <td class="tg-0pky">
                         IPv4/IPv6: Various TTLs for the same IP address
                     </td>
-                    <td class="tg-btxf">-</td>
+                    <td class="tg-btxf">internet_layer.py: get_inconsistent_ttls()</td>
                     <td class="tg-btxf">-</td>
                     <td class="tg-0pky">-</td>
                     <td class="tg-0pky">
                         IPv4/IPv6: Sudden drop in traffic for a given address
                     </td>
-                    <td class="tg-btxf">-</td>
-                    <td class="tg-btxf">-</td>
-                    <td class="tg-0pky">-</td>
+                    <td class="tg-btxf">?</td>
+                    <td class="tg-btxf">?</td>
+                    <td class="tg-btxf">?</td>
                 </tr>
                 <tr>
                     <td class="tg-btxf">
@@ -255,13 +255,13 @@
                     <td class="tg-0pky">
                         ARP: Translation of a local host address
                     </td>
-                    <td class="tg-btxf">-</td>
+                    <td class="tg-btxf">link_layer.py: get_lost_traffic_by_arp()</td>
                     <td class="tg-btxf">-</td>
                     <td class="tg-0pky">-</td>
                     <td class="tg-0pky">
                         IPv4/IPv6: Different capture snaplen
                     </td>
-                    <td class="tg-btxf">-</td>
+                    <td class="tg-btxf">pcapdata.py: check_snaplen_context()</td>
                     <td class="tg-btxf">-</td>
                     <td class="tg-0pky">-</td>
                     <td class="tg-0pky">
@@ -275,7 +275,7 @@
                     <td class="tg-btxf">
                         ARP: Responses from a host without connections
                     </td>
-                    <td class="tg-btxf">-</td>
+                    <td class="tg-btxf">link_layer.py: get_lost_traffic_by_arp()</td>
                     <td class="tg-btxf">-</td>
                     <td class="tg-btxf">-</td>
                     <td class="tg-btxf">
@@ -297,7 +297,7 @@
                     <td class="tg-0pky"></td>
                     <td class="tg-0pky"></td>
                     <td class="tg-0pky">ARP: Missing responses from a host</td>
-                    <td class="tg-btxf">-</td>
+                    <td class="tg-btxf">link_layer.py: get_missing_arp_responses()</td>
                     <td class="tg-btxf">-</td>
                     <td class="tg-0pky">-</td>
                     <td class="tg-0pky">IPv4/IPv6: Incorrect packet length</td>
@@ -368,7 +368,7 @@
                     <td class="tg-0pky">
                         ARP: Translation of a local host address
                     </td>
-                    <td class="tg-btxf">link_layer.py: get_lost_arp_traffic()</td>
+                    <td class="tg-btxf">link_layer.py: get_lost_traffic_by_arp()</td>
                     <td class="tg-btxf">-</td>
                     <td class="tg-0pky">-</td>
                 </tr>
@@ -384,7 +384,7 @@
                     <td class="tg-btxf">
                         ARP: Responses from a host without connections
                     </td>
-                    <td class="tg-btxf">link_layer.py: get_lost_arp_traffic()</td>
+                    <td class="tg-btxf">link_layer.py: get_lost_traffic_by_arp()</td>
                     <td class="tg-btxf">-</td>
                     <td class="tg-btxf">-</td>
                 </tr>
@@ -418,6 +418,24 @@
                 <tr>
                     <td class="tg-btxf">Usage of nonstandard protocols</td>
                     <td class="tg-btxf">misc.py: check_protocol()</td>
+                    <td class="tg-btxf">-</td>
+                    <td class="tg-btxf">-</td>
+                </tr>
+                <tr>
+                    <td class="tg-btxf">Certificate validity check</td>
+                    <td class="tg-btxf">misc.py: check_ct_timestamp()</td>
+                    <td class="tg-btxf">-</td>
+                    <td class="tg-btxf">-</td>
+                </tr>
+                <tr>
+                    <td class="tg-btxf">Check for packets with mismatched frame and snaplen</td>
+                    <td class="tg-btxf">misc.py: check_frame_len_and_cap_len()</td>
+                    <td class="tg-btxf">-</td>
+                    <td class="tg-btxf">-</td>
+                </tr>
+                <tr>
+                    <td class="tg-btxf">Check for truncated packets, if file size is smaller than data size</td>
+                    <td class="tg-btxf">pcapdata.py: check_file_data_size()</td>
                     <td class="tg-btxf">-</td>
                     <td class="tg-btxf">-</td>
                 </tr>

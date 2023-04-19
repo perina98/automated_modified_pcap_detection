@@ -76,9 +76,9 @@ class LinkLayer():
         
         return failed_macs
     
-    def get_lost_arp_traffic(self):
+    def get_lost_traffic_by_arp(self):
         '''
-        Get number of ARP traffic MAC addresses that are not used in IP traffic
+        Get number of MAC addresses that are not used in IP traffic but are present in ARP traffic
         Args:
 
         Returns:
@@ -101,6 +101,32 @@ class LinkLayer():
         ip_macs_set = set(ip_macs)
         for mac in arp_set:
             if mac not in ip_macs_set:
+                failed_macs += 1
+
+        return failed_macs
+    
+    def get_missing_arp_responses(self):
+        '''
+        Get number of missing ARP responses
+        Args:
+
+        Returns:
+            int: number of missing ARP responses
+        '''
+        arp_requests = []
+        arp_responses = []
+        pkts = self.session.query(Packet).filter(Packet.id_pcap == self.id_pcap).all()
+
+        for pkt in pkts:
+            if pkt.type == 2054:
+                if pkt.arp_op == 1:
+                    arp_requests.append(pkt.arp_ip_dst)
+                if pkt.arp_op == 2:
+                    arp_responses.append(pkt.arp_ip_src)
+                
+        failed_macs = 0
+        for ip in arp_requests:
+            if ip not in arp_responses:
                 failed_macs += 1
 
         return failed_macs

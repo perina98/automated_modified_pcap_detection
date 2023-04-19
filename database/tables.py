@@ -40,6 +40,13 @@ class Packet(Base):
     id_pcap = Column(Integer, ForeignKey('pcap.id_pcap'))
     length = Column(Integer)
     dns = Column(String)
+    arp_op = Column(Integer)
+    arp_ip_src = Column(String)
+    arp_ip_dst = Column(String)
+    ttl = Column(Integer)
+    mss = Column(Integer)
+    tls_msg_type = Column(Integer)
+    tls_ciphers = Column(String)
     pcap = relationship("Pcap", back_populates="packets")
 
 class Pcap(Base):

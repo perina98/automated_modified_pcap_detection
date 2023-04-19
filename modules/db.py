@@ -78,12 +78,20 @@ class Database():
             'ack': None,
             'window': None,
             'dns': None,
+            'arp_op': None,
+            'arp_ip_src': None,
+            'arp_ip_dst': None,
+            'ttl': None,
+            'mss': None,
+            'tls_msg_type': None,
+            'tls_ciphers': None,
         }
 
         if pkt.haslayer(IP):
             pkt_data['protocol'] = pkt[IP].proto
             pkt_data['ip_src'] = pkt[IP].src
             pkt_data['ip_dst'] = pkt[IP].dst
+            pkt_data['ttl'] = pkt[IP].ttl
 
             if pkt.haslayer(TCP):
                 pkt_data['port_src'] = pkt[TCP].sport
@@ -91,6 +99,8 @@ class Database():
                 pkt_data['seq'] = pkt[TCP].seq
                 pkt_data['ack'] = pkt[TCP].ack
                 pkt_data['window'] = pkt[TCP].window
+                if 'MSS' in pkt[TCP].options:
+                    pkt_data['mss'] = pkt[TCP].options['MSS']
             elif pkt.haslayer(UDP):
                 pkt_data['port_src'] = pkt[UDP].sport
                 pkt_data['port_dst'] = pkt[UDP].dport
@@ -126,9 +136,31 @@ class Database():
             dns_data['an'] = an
             pkt_data['dns'] = json.dumps(dns_data)
 
-        pkt_data['type'] = pkt.type
-        pkt_data['eth_src'] = pkt[Ether].src
-        pkt_data['eth_dst'] = pkt[Ether].dst
+        try:
+            pkt_data['type'] = pkt.type
+            pkt_data['eth_src'] = pkt[Ether].src
+            pkt_data['eth_dst'] = pkt[Ether].dst
+        # some packets don't have Ether layer or type
+        except (AttributeError, IndexError):
+            pass
+
+        if pkt.haslayer(ARP):
+            pkt_data['arp_op'] = pkt[ARP].op
+            pkt_data['arp_ip_src'] = pkt[ARP].psrc
+            pkt_data['arp_ip_dst'] = pkt[ARP].pdst
+
+        if pkt.haslayer(TLS):
+            try:
+                pkt_data['tls_msg_type'] = pkt[TLS].msg[0].msgtype
+                if pkt[TLS].msg[0].msgtype == 1:
+                    pkt_data['tls_ciphers'] = json.dumps(pkt[TLS].msg[0].ciphers)
+                if pkt[TLS].msg[0].msgtype == 2:
+                    pkt_data['tls_ciphers'] = json.dumps(pkt[TLS].msg[0].cipher)
+            except (AttributeError, IndexError):
+                pass
+
+
+
         pkt_data['length'] = len(pkt)
         
         new_packet = Packet(
@@ -146,6 +178,13 @@ class Database():
             eth_dst=pkt_data['eth_dst'],
             length=pkt_data['length'],
             dns=pkt_data['dns'],
+            arp_op=pkt_data['arp_op'],
+            arp_ip_src=pkt_data['arp_ip_src'],
+            arp_ip_dst=pkt_data['arp_ip_dst'],
+            ttl=pkt_data['ttl'],
+            mss=pkt_data['mss'],
+            tls_msg_type=pkt_data['tls_msg_type'],
+            tls_ciphers=pkt_data['tls_ciphers'],
             id_pcap=id_pcap
         )
         session.add(new_packet)

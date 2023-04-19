@@ -26,30 +26,31 @@ class Miscellaneous():
             None
         '''
         self.protocols = functions.Functions().get_protocols()
+        self.snaplen_context = []
 
-    def check_protocol(self, pkt):
+    def check_protocol(self, packet):
         '''
         Check the packet protocol number vs its port on both sides
         Args:
-            pkt (mixed): packet
+            packet (mixed): packet
 
         Returns:
             None
         '''
-        if pkt.haslayer(IP):
-            protocol = pkt[IP].proto
+        if packet.haslayer(IP):
+            protocol = packet[IP].proto
             if protocol in self.protocols:
-                sport = pkt[TCP].sport if protocol == 6 else pkt[UDP].sport
-                dport = pkt[TCP].dport if protocol == 6 else pkt[UDP].dport
+                sport = packet[TCP].sport if protocol == 6 else packet[UDP].sport
+                dport = packet[TCP].dport if protocol == 6 else packet[UDP].dport
                 if sport not in self.protocols[protocol] and dport not in self.protocols[protocol]:
                     return True
         return False
 
-    def check_checksum(self,pkt):
+    def check_checksum(self,packet):
         '''
         Constructor
         Args:
-            pkt (scapy packet): packet to check
+            packet (scapy packet): packet to check
 
         Returns:
             None
@@ -62,102 +63,125 @@ class Miscellaneous():
             "ICMP": None
         }
 
-        if pkt.haslayer(TCP):
-            original_checksums["TCP"] = pkt[TCP].chksum
-            del pkt[TCP].chksum
+        if packet.haslayer(TCP):
+            original_checksums["TCP"] = packet[TCP].chksum
+            del packet[TCP].chksum
 
-        if pkt.haslayer(UDP):
-            original_checksums["UDP"] = pkt[UDP].chksum
-            del pkt[UDP].chksum
+        if packet.haslayer(UDP):
+            original_checksums["UDP"] = packet[UDP].chksum
+            del packet[UDP].chksum
         
-        if pkt.haslayer(IP):
-            original_checksums["IP"] = pkt[IP].chksum
-            del pkt[IP].chksum
+        if packet.haslayer(IP):
+            original_checksums["IP"] = packet[IP].chksum
+            del packet[IP].chksum
         
-        if pkt.haslayer(ICMP):
-            original_checksums["ICMP"] = pkt[ICMP].chksum
-            del pkt[ICMP].chksum
+        if packet.haslayer(ICMP):
+            original_checksums["ICMP"] = packet[ICMP].chksum
+            del packet[ICMP].chksum
 
-        pkt = pkt.__class__(bytes(pkt))
+        packet = packet.__class__(bytes(packet))
 
-        if (original_checksums["TCP"] != None and original_checksums["TCP"] != pkt[TCP].chksum) or \
-            (original_checksums["UDP"] != None and original_checksums["UDP"] != pkt[UDP].chksum) or \
-            (original_checksums["IP"] != None and original_checksums["IP"] != pkt[IP].chksum) or \
-            (original_checksums["ICMP"] != None and original_checksums["ICMP"] != pkt[ICMP].chksum):    
+        if (original_checksums["TCP"] != None and original_checksums["TCP"] != packet[TCP].chksum) or \
+            (original_checksums["UDP"] != None and original_checksums["UDP"] != packet[UDP].chksum) or \
+            (original_checksums["IP"] != None and original_checksums["IP"] != packet[IP].chksum) or \
+            (original_checksums["ICMP"] != None and original_checksums["ICMP"] != packet[ICMP].chksum):    
+            print ("Checksums are not equal")
+            print(packet.time, packet.summary())
             modified = True
 
         return modified
 
-    def check_packet_length(self, pkt):
+    def check_packet_length(self, packet):
         '''
         Check if the packet length is correct
         Args:
-            pkt (scapy packet): packet to check
+            packet (scapy packet): packet to check
 
         Returns:
             None
         '''
 
-        length = len(pkt)
+        length = len(packet)
         rawlen = 0
 
-        if pkt.haslayer(Raw):
-            rawlen = len(pkt[Raw])
+        if packet.haslayer(Raw):
+            rawlen = len(packet[Raw])
 
-        if pkt.haslayer(Ether):
-            if len(pkt) != length:
+        if packet.haslayer(Ether):
+            if len(packet) != length:
                 return True
         
         # Ethernet header
         length -= 14
 
-        if pkt.haslayer(IP):
+        if packet.haslayer(IP):
             # length - Ethernet header
-            if pkt[IP].len != length:
+            if packet[IP].len != length:
                 return True
             
             # IP header
-            length -= pkt[IP].ihl * 4
+            length -= packet[IP].ihl * 4
 
-        if pkt.haslayer(UDP):
-            if length != pkt[UDP].len:
+        if packet.haslayer(UDP):
+            if length != packet[UDP].len:
                 return True
             # UDP header
             length -= 8
 
-        if pkt.haslayer(TCP):
-            if length != len(pkt[TCP]):
+        if packet.haslayer(TCP):
+            if length != len(packet[TCP]):
                 return True
             # TCP header
-            length -= pkt[TCP].dataofs * 4
+            length -= packet[TCP].dataofs * 4
 
-        if pkt.haslayer(TLS):
-            # pkt[TLS].len is the length of the TLS record
+        if packet.haslayer(TLS):
+            # packet[TLS].len is the length of the TLS record
             # payload is the length of the TLS record payload
             # 5 is the length of the TLS record header
-            payload = pkt[TLS].payload
-            if length != pkt[TLS].len + 5 + len(payload):
+            payload = packet[TLS].payload
+            if length != packet[TLS].len + 5 + len(payload):
+                return True
+            
+        if packet.haslayer(NTP):
+            if length != 48:
                 return True
         
         return False
     
-    def check_invalid_payload(self, pkt):
+    def check_invalid_payload(self, packet):
         '''
         Check if the packet payload ends with multiple 0x00 bytes or if it ends with 16 same bytes
         Args:
-            pkt (scapy packet): packet to check
+            packet (scapy packet): packet to check
 
         Returns:
             None
         '''
-        if pkt.haslayer(Raw):
-            if pkt[Raw].load.endswith(b'\x00\x00\x00\x00\x00\x00\x00\x00'):
+        if packet.haslayer(Raw):
+            if packet[Raw].load.endswith(b'\x00\x00\x00\x00\x00\x00\x00\x00'):
                 return True
             
             # check if last 16 bytes are the same
-            if len(pkt[Raw].load) >= 16:
-                last_16 = pkt[Raw].load[-16:]
+            if len(packet[Raw].load) >= 16:
+                last_16 = packet[Raw].load[-16:]
                 if last_16 == last_16[0:1] * 16:
                     return True
             
         return False
+    
+
+    def check_ct_timestamp(self, packet):
+        if packet.haslayer(TLS) and packet.haslayer(TLSServerHello):
+            if hasattr(packet[TLSServerHello],'gmt_unix_time'):
+                if packet[TLSServerHello].gmt_unix_time <= packet.time:
+                    return True
+        return False
+    
+    def check_frame_len_and_cap_len(self, packet):
+        if hasattr(packet, 'len'):
+            if packet.len != len(packet):
+                return True
+        else:
+            return True
+        return False
+    

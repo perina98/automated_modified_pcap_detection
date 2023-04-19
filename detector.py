@@ -11,10 +11,11 @@
 
 import os
 import logging
+import re
 
 import multiprocessing
 
-from modules import link_layer, internet_layer, transport_layer, application_layer, misc, db
+from modules import link_layer, internet_layer, transport_layer, application_layer, misc, pcapdata, db
 from static import constants
 from scapy.all import *
 from scapy.layers.tls import *
@@ -76,20 +77,38 @@ class Detector():
             id_pcap = self.db.save_pcap(session, self.args.input_pcap)
             self.check_pcap(self.args.input_pcap, id_pcap)
             exit(0)
-    
-    def get_pcap_packets_count(self, pcap_path):
-        '''
-        Get number of packets in pcap file using capinfos from tshark
-        Args:
-            pcap_path (str): Path to pcap file
 
-        Returns:
-            int: Number of packets in pcap file
-        '''
-        num = os.popen("capinfos -c -M " + pcap_path + " | grep -oP \"\s{3}\d+\"").read()
-        if num == '':
-            return 0
-        return int(num)
+    def get_snaplenlimit(self, s):
+        if 'range' in s:
+            match = re.search(r'\d+ bytes - (\d+) bytes \(range\)', s)
+            if match:
+                return int(match.group(1))
+        else:
+            match = re.search(r'(\d+) bytes', s)
+            if match:
+                return int(match.group(1))
+        return None
+    
+    def get_capinfos_data(self, pcap_path):
+        self.log.debug("Getting pcap header data")
+        cmd = ['capinfos', '-M', pcap_path]
+        output = subprocess.check_output(cmd, universal_newlines=True)
+        lines = output.strip().split('\n')
+        data = {}
+        data['snaplenlimit'] = 0
+        for line in lines:
+            match = re.match(r'^(.*?):\s+(.*)$', line)
+            if match:
+                key = match.group(1)
+                value = match.group(2)
+                if key == 'Packet size limit':
+                    data['snaplenlimit'] = self.get_snaplenlimit(value)
+                data[key] = value
+
+        data['File size'] = int(data['File size'].replace(' bytes', ''))
+        data['Data size'] = int(data['Data size'].replace(' bytes', ''))
+
+        return data
 
     def get_dataset_pcaps(self):
         '''
@@ -118,14 +137,16 @@ class Detector():
         Returns:
             dict: Dictionary of modifications
         '''
-        pcap_modifications = {
+        packet_modifications = {
             'mismatched_checksums': int(miscellaneous_mod.check_checksum(packet)),
             'mismatched_protocols': int(miscellaneous_mod.check_protocol(packet)),
             'incorrect_packet_length': int(miscellaneous_mod.check_packet_length(packet)),
             'invalid_packet_payload': int(miscellaneous_mod.check_invalid_payload(packet)),
+            'invalid_ct_timestamp': int(miscellaneous_mod.check_ct_timestamp(packet)),
+            'insuficient_capture_length': int(miscellaneous_mod.check_frame_len_and_cap_len(packet)),
         } 
-        
-        return pcap_modifications
+
+        return packet_modifications
         
     def save_packets(self, packet_chunk, id_pcap):
         '''
@@ -248,9 +269,14 @@ class Detector():
 
         Returns:
         '''
-        packet_count = self.get_pcap_packets_count(pcap_path)
+        capinfos = self.get_capinfos_data(pcap_path)
 
-        pcap_modifications = {
+        packet_count = capinfos['Number of packets']
+        pcap_snaplen_limit = capinfos['snaplenlimit']
+        pcap_file_size = capinfos['File size']
+        pcap_data_size = capinfos['Data size']
+
+        packet_modifications = {
             'mismatched_checksums': 0,
             'mismatched_protocols': 0,
             'incorrect_packet_length': 0,
@@ -263,8 +289,20 @@ class Detector():
             'translation_of_unvisited_domains': 0,
             'incomplete_ftp': 0,
             'invalid_packet_payload': 0,
+            'invalid_ct_timestamp': 0,
+            'missing_arp_responses': 0,
+            'insuficient_capture_length': 0,
+            'inconsistent_ttls': 0,
+            'inconsistent_mss': 0,
+            'inconsistent_window_size': 0,
+            'mismatched_ciphers': 0,
         }
-        
+
+        pcap_modifications = {
+            'snaplen_context': False,
+            'file_and_data_size': False,
+        }
+
         manager = multiprocessing.Manager()
         shared_list = manager.list([])
 
@@ -273,49 +311,71 @@ class Detector():
         self.log.debug("Accumulating results")
         for packet in shared_list:
             for key in packet:
-                pcap_modifications[key] += packet[key]
+                packet_modifications[key] += packet[key]
 
         engine = create_engine(constants.ENGINE + ':///' + constants.DATABASE)
         session = sessionmaker(bind=engine)()
+
+        pcapdata_mod = pcapdata.PcapData(id_pcap, session)
+        self.log.debug("Running pcap modification tests")
+        pcap_modifications["snaplen_context"] = pcapdata_mod.check_snaplen_context(pcap_snaplen_limit)
+        pcap_modifications["file_and_data_size"] = pcapdata_mod.check_file_data_size(pcap_file_size, pcap_data_size)
+
 
         link_layer_mod = link_layer.LinkLayer(id_pcap, session)
         internet_layer_mod = internet_layer.InternetLayer(id_pcap, session)
         transport_layer_mod = transport_layer.TransportLayer(id_pcap, session)
         application_layer_mod = application_layer.ApplicationLayer(id_pcap, session)
 
+        self.log.debug("Running packet modification tests")
+        packet_modifications["inconsistent_ttls"] = internet_layer_mod.get_inconsistent_ttls()
+
         self.log.debug("Running link layer tests")
-        pcap_modifications["missing_arp_traffic"] = link_layer_mod.get_missing_arp_traffic()
-        pcap_modifications["inconsistent_mac_maps"] = link_layer_mod.get_inconsistent_mac_maps()
-        pcap_modifications["lost_arp_traffic"] = link_layer_mod.get_lost_arp_traffic()
+        packet_modifications["missing_arp_traffic"] = link_layer_mod.get_missing_arp_traffic()
+        packet_modifications["inconsistent_mac_maps"] = link_layer_mod.get_inconsistent_mac_maps()
+        packet_modifications["lost_arp_traffic"] = link_layer_mod.get_lost_traffic_by_arp()
+        packet_modifications["missing_arp_responses"] = link_layer_mod.get_missing_arp_responses()
 
         self.log.debug("Running transport layer tests")
-        pcap_modifications["inconsistent_interpacket_gaps"] = transport_layer_mod.get_inconsistent_interpacket_gaps()
+        packet_modifications["inconsistent_interpacket_gaps"] = transport_layer_mod.get_inconsistent_interpacket_gaps()
+        packet_modifications["inconsistent_mss"] = transport_layer_mod.get_inconsistent_mss()
+        packet_modifications["inconsistent_window_size"] = transport_layer_mod.get_inconsistent_window()
+        packet_modifications["mismatched_ciphers"] = transport_layer_mod.get_mismatched_ciphers()
 
         self.log.debug("Running app layer tests")
-        pcap_modifications["mismatched_dns_query_answer"] = application_layer_mod.get_mismatched_dns_query_answer()
-        pcap_modifications["mismatched_dns_answer_stack"] = application_layer_mod.get_mismatched_dns_answer_stack()
-        pcap_modifications["missing_translation_of_visited_domain"] = application_layer_mod.get_missing_translation_of_visited_domain()
-        pcap_modifications["translation_of_unvisited_domains"] = application_layer_mod.get_translation_of_unvisited_domains()
-        pcap_modifications["incomplete_ftp"] = application_layer_mod.get_incomplete_ftp()
+        packet_modifications["mismatched_dns_query_answer"] = application_layer_mod.get_mismatched_dns_query_answer()
+        packet_modifications["mismatched_dns_answer_stack"] = application_layer_mod.get_mismatched_dns_answer_stack()
+        packet_modifications["missing_translation_of_visited_domain"] = application_layer_mod.get_missing_translation_of_visited_domain()
+        packet_modifications["translation_of_unvisited_domains"] = application_layer_mod.get_translation_of_unvisited_domains()
+        packet_modifications["incomplete_ftp"] = application_layer_mod.get_incomplete_ftp()
 
 
-        self.print_results(pcap_path, packet_count, pcap_modifications)
+        self.print_results(pcap_path, packet_count, pcap_modifications, packet_modifications)
 
-    def print_results(self, pcap_path, packet_count, pcap_modifications):
+    def print_results(self, pcap_path, packet_count, pcap_modifications, packet_modifications):
         '''
         Print results of pcap file
         Args:
             pcap_path (str): Path to pcap file
             packet_count (int): Number of packets in pcap file
-            pcap_modifications (dict): Dictionary of modifications
+            packet_modifications (dict): Dictionary of modifications
 
         Returns:
         '''
-        keys = pcap_modifications.keys()
+        pcap_keys = pcap_modifications.keys()
+        packet_keys = packet_modifications.keys()
 
         print ("")
-        print ("=== Results come now ===")
+        print ("=== Results ===")
         print ("")
 
-        for key in keys:
-            print (pcap_path," pcap_modifications['"+key+"'] = ", str(pcap_modifications[key]) + "/" + str(packet_count))
+        print("Pcap modifications:")
+        for key in pcap_keys:
+            if pcap_modifications[key]:
+                print (pcap_path," pcap_modifications['"+key+"'] = ", "Modified")
+            else:
+                print (pcap_path," pcap_modifications['"+key+"'] = ", "Not modified")
+
+        print("Packet modifications:")
+        for key in packet_keys:
+            print (pcap_path," packet_modifications['"+key+"'] = ", str(packet_modifications[key]) + "/" + str(packet_count))
