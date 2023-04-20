@@ -12,11 +12,11 @@
 import os
 import logging
 import re
+import yaml
 
 import multiprocessing
 
 from modules import link_layer, internet_layer, transport_layer, application_layer, misc, pcapdata, db
-from static import constants
 from scapy.all import *
 from scapy.layers.tls import *
 
@@ -28,9 +28,6 @@ logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
 class Detector():
     '''
     Main detector class that handles the logic and calls other modules
-    Args:
-
-    Returns:
     '''
     def __init__(self, args=None):
         '''
@@ -39,9 +36,13 @@ class Detector():
         Args:
 
         Returns:
+            None
         '''
         self.args = args
         self.db = db.Database()
+
+        with open(self.args.config, 'r') as f:
+            self.config = yaml.safe_load(f)
 
         logging.basicConfig(level=self.args.log.upper(), format='%(message)s')
         self.log = logging.getLogger(__name__)
@@ -50,8 +51,8 @@ class Detector():
 
         self.log.debug("Ensuring database exists")
 
-        engine = create_engine(constants.ENGINE + ':///' + constants.DATABASE)
-        self.db.ensure_db(engine, constants.DATABASE)
+        engine = create_engine(self.config['database']['engine'] + ':///' + self.config['database']['file'])
+        self.db.ensure_db(engine, self.config['database']['file'])
 
     def run(self):
         '''
@@ -60,8 +61,9 @@ class Detector():
         Args:
 
         Returns:
+            None
         '''
-        engine = create_engine(constants.ENGINE + ':///' + constants.DATABASE)
+        engine = create_engine(self.config['database']['engine'] + ':///' + self.config['database']['file'])
         session = sessionmaker(bind=engine)()
         if self.args.dataset_dir:
             pcaps = self.get_dataset_pcaps()
@@ -79,6 +81,14 @@ class Detector():
             exit(0)
 
     def get_snaplenlimit(self, s):
+        '''
+        Get snap len limit from packet header
+        Args:
+            s: string to parse
+
+        Returns:
+            snaplenlimit: snap len limit
+        '''
         if 'range' in s:
             match = re.search(r'\d+ bytes - (\d+) bytes \(range\)', s)
             if match:
@@ -90,6 +100,14 @@ class Detector():
         return None
     
     def get_capinfos_data(self, pcap_path):
+        '''
+        Get pcap header data using capinfos
+        Args:
+            pcap_path: path to pcap file
+
+        Returns:
+            dict: pcap header data
+        '''
         self.log.debug("Getting pcap header data")
         cmd = ['capinfos', '-M', pcap_path]
         output = subprocess.check_output(cmd, universal_newlines=True)
@@ -137,12 +155,14 @@ class Detector():
         Returns:
             dict: Dictionary of modifications
         '''
+        if not self.config['tests']['misc']:
+            return {}
+        
         packet_modifications = {
             'mismatched_checksums': int(miscellaneous_mod.check_checksum(packet)),
             'mismatched_protocols': int(miscellaneous_mod.check_protocol(packet)),
             'incorrect_packet_length': int(miscellaneous_mod.check_packet_length(packet)),
             'invalid_packet_payload': int(miscellaneous_mod.check_invalid_payload(packet)),
-            'invalid_ct_timestamp': int(miscellaneous_mod.check_ct_timestamp(packet)),
             'insuficient_capture_length': int(miscellaneous_mod.check_frame_len_and_cap_len(packet)),
         } 
 
@@ -156,8 +176,9 @@ class Detector():
             id_pcap (int): Id of pcap file
 
         Returns:
+            None
         '''
-        engine = create_engine(constants.ENGINE + ':///' + constants.DATABASE)
+        engine = create_engine(self.config['database']['engine'] + ':///' + self.config['database']['file'])
         session = sessionmaker(bind=engine)()
         for packet in packet_chunk:
             self.db.save_packet(session, id_pcap, packet)
@@ -172,6 +193,7 @@ class Detector():
             shared_list (list): List of processed packets
 
         Returns:
+            None
         '''
         miscellaneous_mod = misc.Miscellaneous()
         while True:
@@ -186,12 +208,13 @@ class Detector():
 
     def save_worker(self, save_queue, id_pcap):
         '''
-        Save packets in queue for each chunk size of SAVE_CHUNK_SIZE packets
+        Save packets in queue for each chunk size of self.config['app']['chunk_size'] packets
         Args:
             save_queue (multiprocessing queue): Queue with packets to save
             id_pcap (int): Id of pcap file
 
         Returns:
+            None
         '''
         packet_chunk = []
         while True:
@@ -205,7 +228,7 @@ class Detector():
 
             packet_chunk.append(packet)
 
-            if len(packet_chunk) == constants.SAVE_CHUNK_SIZE:
+            if len(packet_chunk) == self.config['app']['chunk_size']:
                 self.log.debug("Saving packets of chunk size " + str(len(packet_chunk)))
                 self.save_packets(packet_chunk, id_pcap)
                 packet_chunk = []
@@ -220,12 +243,10 @@ class Detector():
             shared_list (list): List of processed packets
 
         Returns:
+            None
         '''
 
-        '''
-        Create queues and processes
-        Start n-1 process workers and 1 save worker
-        '''
+        # Create queues and processes
         in_queue = multiprocessing.JoinableQueue()
         save_queue = multiprocessing.JoinableQueue()
         num_processes = multiprocessing.cpu_count() - 1
@@ -233,12 +254,14 @@ class Detector():
         self.log.debug("Detected %d cpus", multiprocessing.cpu_count())
 
         workers = []
+        # Start process workers
         for i in range(num_processes):
             process = multiprocessing.Process(target=self.process_worker, args=(in_queue, shared_list))
             workers.append(process)
             self.log.debug("Starting process worker %d", i + 1)
             process.start()
 
+        # Start save worker
         process = multiprocessing.Process(target=self.save_worker, args=(save_queue, id_pcap))
         workers.append(process)
         self.log.debug("Starting save worker")
@@ -259,7 +282,6 @@ class Detector():
         for process in workers:
             process.join()
 
-    # read pcap file and check if it is modified
     def check_pcap(self, pcap_path, id_pcap):
         '''
         Check pcap file for modifications
@@ -268,6 +290,7 @@ class Detector():
             id_pcap (int): Id of pcap file
 
         Returns:
+            None
         '''
         capinfos = self.get_capinfos_data(pcap_path)
 
@@ -289,7 +312,6 @@ class Detector():
             'translation_of_unvisited_domains': 0,
             'incomplete_ftp': 0,
             'invalid_packet_payload': 0,
-            'invalid_ct_timestamp': 0,
             'missing_arp_responses': 0,
             'insuficient_capture_length': 0,
             'inconsistent_ttls': 0,
@@ -313,41 +335,46 @@ class Detector():
             for key in packet:
                 packet_modifications[key] += packet[key]
 
-        engine = create_engine(constants.ENGINE + ':///' + constants.DATABASE)
+        engine = create_engine(self.config['database']['engine'] + ':///' + self.config['database']['file'])
         session = sessionmaker(bind=engine)()
 
-        pcapdata_mod = pcapdata.PcapData(id_pcap, session)
-        self.log.debug("Running pcap modification tests")
-        pcap_modifications["snaplen_context"] = pcapdata_mod.check_snaplen_context(pcap_snaplen_limit)
-        pcap_modifications["file_and_data_size"] = pcapdata_mod.check_file_data_size(pcap_file_size, pcap_data_size)
-
-
-        link_layer_mod = link_layer.LinkLayer(id_pcap, session)
-        internet_layer_mod = internet_layer.InternetLayer(id_pcap, session)
-        transport_layer_mod = transport_layer.TransportLayer(id_pcap, session)
-        application_layer_mod = application_layer.ApplicationLayer(id_pcap, session)
+        if self.config['tests']['pcap']:
+            self.log.debug("Running pcap modification tests")
+            pcapdata_mod = pcapdata.PcapData(id_pcap, session)
+            pcap_modifications["snaplen_context"] = pcapdata_mod.check_snaplen_context(pcap_snaplen_limit)
+            pcap_modifications["file_and_data_size"] = pcapdata_mod.check_file_data_size(pcap_file_size, pcap_data_size)
 
         self.log.debug("Running packet modification tests")
-        packet_modifications["inconsistent_ttls"] = internet_layer_mod.get_inconsistent_ttls()
 
-        self.log.debug("Running link layer tests")
-        packet_modifications["missing_arp_traffic"] = link_layer_mod.get_missing_arp_traffic()
-        packet_modifications["inconsistent_mac_maps"] = link_layer_mod.get_inconsistent_mac_maps()
-        packet_modifications["lost_arp_traffic"] = link_layer_mod.get_lost_traffic_by_arp()
-        packet_modifications["missing_arp_responses"] = link_layer_mod.get_missing_arp_responses()
+        if self.config['tests']['link_layer']:
+            self.log.debug("Running link layer tests")
+            link_layer_mod = link_layer.LinkLayer(id_pcap, session)
+            packet_modifications["missing_arp_traffic"] = link_layer_mod.get_missing_arp_traffic()
+            packet_modifications["inconsistent_mac_maps"] = link_layer_mod.get_inconsistent_mac_maps()
+            packet_modifications["lost_arp_traffic"] = link_layer_mod.get_lost_traffic_by_arp()
+            packet_modifications["missing_arp_responses"] = link_layer_mod.get_missing_arp_responses()
 
-        self.log.debug("Running transport layer tests")
-        packet_modifications["inconsistent_interpacket_gaps"] = transport_layer_mod.get_inconsistent_interpacket_gaps()
-        packet_modifications["inconsistent_mss"] = transport_layer_mod.get_inconsistent_mss()
-        packet_modifications["inconsistent_window_size"] = transport_layer_mod.get_inconsistent_window()
-        packet_modifications["mismatched_ciphers"] = transport_layer_mod.get_mismatched_ciphers()
+        if self.config['tests']['internet_layer']:
+            self.log.debug("Running internet layer tests")
+            internet_layer_mod = internet_layer.InternetLayer(id_pcap, session)
+            packet_modifications["inconsistent_ttls"] = internet_layer_mod.get_inconsistent_ttls()
 
-        self.log.debug("Running app layer tests")
-        packet_modifications["mismatched_dns_query_answer"] = application_layer_mod.get_mismatched_dns_query_answer()
-        packet_modifications["mismatched_dns_answer_stack"] = application_layer_mod.get_mismatched_dns_answer_stack()
-        packet_modifications["missing_translation_of_visited_domain"] = application_layer_mod.get_missing_translation_of_visited_domain()
-        packet_modifications["translation_of_unvisited_domains"] = application_layer_mod.get_translation_of_unvisited_domains()
-        packet_modifications["incomplete_ftp"] = application_layer_mod.get_incomplete_ftp()
+        if self.config['tests']['transport_layer']:
+            self.log.debug("Running transport layer tests")
+            transport_layer_mod = transport_layer.TransportLayer(id_pcap, session)
+            packet_modifications["inconsistent_interpacket_gaps"] = transport_layer_mod.get_inconsistent_interpacket_gaps()
+            packet_modifications["inconsistent_mss"] = transport_layer_mod.get_inconsistent_mss()
+            packet_modifications["inconsistent_window_size"] = transport_layer_mod.get_inconsistent_window()
+            packet_modifications["mismatched_ciphers"] = transport_layer_mod.get_mismatched_ciphers()
+
+        if self.config['tests']['application_layer']:
+            self.log.debug("Running app layer tests")
+            application_layer_mod = application_layer.ApplicationLayer(id_pcap, session)
+            packet_modifications["mismatched_dns_query_answer"] = application_layer_mod.get_mismatched_dns_query_answer()
+            packet_modifications["mismatched_dns_answer_stack"] = application_layer_mod.get_mismatched_dns_answer_stack()
+            packet_modifications["missing_translation_of_visited_domain"] = application_layer_mod.get_missing_translation_of_visited_domain()
+            packet_modifications["translation_of_unvisited_domains"] = application_layer_mod.get_translation_of_unvisited_domains()
+            packet_modifications["incomplete_ftp"] = application_layer_mod.get_incomplete_ftp()
 
 
         self.print_results(pcap_path, packet_count, pcap_modifications, packet_modifications)
@@ -358,9 +385,11 @@ class Detector():
         Args:
             pcap_path (str): Path to pcap file
             packet_count (int): Number of packets in pcap file
+            pcap_modifications (dict): Dictionary of modifications
             packet_modifications (dict): Dictionary of modifications
 
         Returns:
+            None
         '''
         pcap_keys = pcap_modifications.keys()
         packet_keys = packet_modifications.keys()

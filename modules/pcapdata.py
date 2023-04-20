@@ -35,7 +35,7 @@ class PcapData():
         Args:
 
         Returns:
-            None
+            bool: True if there are no diviations in the snaplen context False otherwise
         '''
         packets = self.session.query(Packet).filter(Packet.id_pcap == self.id_pcap).all()
 
@@ -66,7 +66,7 @@ class PcapData():
         Args:
 
         Returns:
-            None
+            bool: True if the file size is smaller than data size False otherwise
         '''
         if pcap_file_size < pcap_data_size:
             return True

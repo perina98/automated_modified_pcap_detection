@@ -38,7 +38,7 @@ class Functions():
             ip_addr (str): IP address
 
         Returns:
-            None
+            bool: True if the IP address is private, False otherwise
         '''
         # Check if the IP address is valid
         try:
@@ -162,7 +162,7 @@ class Functions():
             pkts (list): list of packets
 
         Returns:
-            None
+            dict: dictionary of TCP streams
         '''
         streams = {}
         for row in pkts:
@@ -181,7 +181,7 @@ class Functions():
             pkts (list): list of packets
 
         Returns:
-            None
+            dict: dictionary of communication channels
         '''
         streams = {}
         for row in pkts:
@@ -199,7 +199,7 @@ class Functions():
         Args:
 
         Returns:
-            None
+            dict: dictionary of protocols
         '''
         with open('static/TCPS.json') as f:
             TCPS = set(json.load(f))

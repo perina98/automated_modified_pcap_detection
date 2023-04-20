@@ -1,3 +1,6 @@
+#! /usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 ##################################################
 ## Main file for running the detector
 ##################################################
@@ -23,6 +26,7 @@ def get_args():
     '''
     parser = argparse.ArgumentParser()
     group = parser.add_mutually_exclusive_group(required=True)
+    parser.add_argument("-c", "--config", metavar="CONFIG_FILE_PATH", help="Config file", required=True, type=str)
     group.add_argument("-i", "--input_pcap", metavar="PCAP_FILE_PATH", help="Input PCAP file path", required=False, type=str)
     group.add_argument("-d", "--dataset_dir", metavar="DATASET_DIR", help="Dataset directory path", required=False, type=str)
     parser.add_argument("-l", "--log", choices=["debug", "info", "warning", "error", "critical"], help="Log level", required=False, default="INFO")

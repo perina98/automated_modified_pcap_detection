@@ -1,0 +1,12 @@
+database:
+  engine: sqlite
+  file: db.db
+app:
+  chunk_size: 1000
+tests:
+  pcap: true
+  misc: true
+  link_layer: true
+  internet_layer: true
+  transport_layer: true
+  application_layer: true

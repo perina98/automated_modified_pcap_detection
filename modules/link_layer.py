@@ -38,7 +38,7 @@ class LinkLayer():
         Args:
 
         Returns:
-            int: number of inconsistent MAC address maps
+            int: number of packets with inconsistent MAC address maps
         '''
         macs = self.functions.get_macs()
         failed = 0
@@ -49,12 +49,12 @@ class LinkLayer():
     
     def get_missing_arp_traffic(self):
         '''
-        Get number of missing ARP IP addresses
+        Get number of missing ARP addresses
         If the communication occurs, ARP traffic for the IP address should be present
         Args:
 
         Returns:
-            int: number of failed ARP IP addresses
+            int: number of packets with missing ARP MAC addresses
         '''
         arp_macs = []
         ip_macs = []
@@ -82,7 +82,7 @@ class LinkLayer():
         Args:
 
         Returns:
-            int: number of failed ARP IP addresses
+            int: number of packets with lost ARP traffic
         '''
         arp_macs = []
         ip_macs = []
@@ -111,7 +111,7 @@ class LinkLayer():
         Args:
 
         Returns:
-            int: number of missing ARP responses
+            int: number of packets with missing ARP responses
         '''
         arp_requests = []
         arp_responses = []

@@ -14,9 +14,9 @@ else
 endif
 	$(PYTHON) makedataset.py
 run_dataset :
-	$(PYTHON) main.py --dataset dataset -l debug
+	$(PYTHON) main.py -c config.yml --dataset dataset -l debug
 single :
-	$(PYTHON) main.py --input_pcap input.pcap -l debug
+	$(PYTHON) main.py -c config.yml --input_pcap input.pcap -l debug
 clean :
 ifeq ($(OS),Windows_NT)
 	@if exist dataset rmdir /s /q dataset

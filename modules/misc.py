@@ -35,7 +35,7 @@ class Miscellaneous():
             packet (mixed): packet
 
         Returns:
-            None
+            bool: True if the protocol number is not consistent with the port number False otherwise
         '''
         if packet.haslayer(IP):
             protocol = packet[IP].proto
@@ -53,7 +53,7 @@ class Miscellaneous():
             packet (scapy packet): packet to check
 
         Returns:
-            None
+            bool: True if at least one checksum is incorrect False otherwise
         '''
         modified = False
         original_checksums = {
@@ -98,7 +98,7 @@ class Miscellaneous():
             packet (scapy packet): packet to check
 
         Returns:
-            None
+            bool: True if the packet length is incorrect False otherwise
         '''
 
         length = len(packet)
@@ -155,7 +155,7 @@ class Miscellaneous():
             packet (scapy packet): packet to check
 
         Returns:
-            None
+            bool: True if the packet payload is invalid, False otherwise
         '''
         if packet.haslayer(Raw):
             if packet[Raw].load.endswith(b'\x00\x00\x00\x00\x00\x00\x00\x00'):
@@ -169,15 +169,16 @@ class Miscellaneous():
             
         return False
     
-
-    def check_ct_timestamp(self, packet):
-        if packet.haslayer(TLS) and packet.haslayer(TLSServerHello):
-            if hasattr(packet[TLSServerHello],'gmt_unix_time'):
-                if packet[TLSServerHello].gmt_unix_time <= packet.time:
-                    return True
-        return False
-    
     def check_frame_len_and_cap_len(self, packet):
+        '''
+        Check if the packet frame length and captured length are the same
+        If not, it indicates that the packet was truncated
+        Args:
+            packet (scapy packet): packet to check
+
+        Returns:
+            bool: True if the packet was truncated, False otherwise
+        '''
         if hasattr(packet, 'len'):
             if packet.len != len(packet):
                 return True

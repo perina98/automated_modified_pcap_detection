@@ -31,6 +31,7 @@ class Database():
             database: database path
 
         Returns:
+            None
         '''
         if os.path.exists(database):
             os.remove(database)
@@ -61,6 +62,7 @@ class Database():
             pkt: scapy packet
 
         Returns:
+            None
         '''
 
         # packet data structure

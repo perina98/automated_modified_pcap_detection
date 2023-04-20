@@ -38,7 +38,7 @@ class TransportLayer():
         Args:
 
         Returns:
-            None
+            int: Number of packets with inconsistent interpacket gaps
         '''
         streams = self.functions.get_tcp_streams(self.session.query(Packet).filter(Packet.id_pcap == self.id_pcap).all())
         failed = 0
@@ -64,7 +64,7 @@ class TransportLayer():
         Args:
 
         Returns:
-            None
+            int: Number of packets with inconsistent MSS
         '''
         channels = self.functions.get_communication_channels(self.session.query(Packet).filter(Packet.id_pcap == self.id_pcap).all())
         failed = 0
@@ -84,11 +84,12 @@ class TransportLayer():
     
     def get_inconsistent_window(self):
         '''
+        !!!!! TOTO TREBA OVERIT !!!!!
         Check if the window size value is different in the same communication
         Args:
 
         Returns:
-            None
+            int: Number of packets with inconsistent window size
         '''
         channels = self.functions.get_communication_channels(self.session.query(Packet).filter(Packet.id_pcap == self.id_pcap).all())
         failed = 0
@@ -112,7 +113,7 @@ class TransportLayer():
         Args:
 
         Returns:
-            None
+            int: Number of packets with mismatched ciphers
         '''
         streams = self.functions.get_tcp_streams(self.session.query(Packet).filter(Packet.id_pcap == self.id_pcap).all())
         failed = 0
