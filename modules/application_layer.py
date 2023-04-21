@@ -142,7 +142,6 @@ class ApplicationLayer():
                         continue
                     if cname_context[-2] != an['answer']['rrname']:
                         f = True
-                        print (cname_context[-2],an['answer']['rrname'])
             failed += 1 if f else 0
 
         return failed
@@ -185,4 +184,74 @@ class ApplicationLayer():
                     failed += 1
 
         return failed        
+    
+    def get_missing_dhcp_ips(self):
+        '''
+        If IP address is in DHCP, it should also appear in other connections in packet capture
+        Args:
 
+        Returns:
+            int: Number of packets with missing DHCP IPs
+        '''
+
+        # get all IPs from DHCP packets
+        dhcp_ips = self.functions.get_dhcp_ips(self.session.query(Packet).filter(Packet.id_pcap == self.id_pcap).all())
+
+        # get all IPs from other packets
+        other_ips = self.functions.get_non_dhcp_ips(self.session.query(Packet).filter(Packet.id_pcap == self.id_pcap).all())
+
+        # check if all DHCP IPs are in other IPs
+        failed = 0
+        for ip in dhcp_ips:
+            if ip not in other_ips and ip != '0.0.0.0':
+                failed += 1
+
+        return failed
+    
+    def get_missing_icmp_ips(self):
+        '''
+        If IP address is in ICMP, it should also appear in other connections in packet capture
+        Args:
+
+        Returns:
+            int: Number of packets with missing ICMP IPs
+        '''
+
+        # get all IPs from ICMP packets
+        icmp_ips = self.functions.get_icmp_ips()
+
+        # get all IPs from other packets
+        other_ips = self.functions.get_non_icmp_ips()
+
+        # check if all ICMP IPs are in other IPs
+        failed = 0
+        for ip in icmp_ips:
+            if ip not in other_ips and ip != '0.0.0.0':
+                failed += 1
+
+        return failed
+    
+    def get_inconsistent_user_agent(self):
+        """
+        User agent should be the same in one communication channel for the whole communication
+        Args:
+
+        Returns:
+            int: Number of packets with inconsistent user agent
+        """
+
+        channels = self.functions.get_communication_channels(self.session.query(Packet).filter(
+            Packet.id_pcap == self.id_pcap and Packet.user_agent is not None
+            ).all())
+
+        failed = 0
+
+        for channel in channels:
+            user_agents = set()
+            for i in range(len(channels[channel])):
+                if channels[channel][i].user_agent is not None:
+                    user_agents.add(channels[channel][i].user_agent)
+            if len(user_agents) > 1:
+                failed += 1
+
+        return failed

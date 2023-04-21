@@ -33,6 +33,7 @@ class InternetLayer():
 
     def get_inconsistent_ttls(self):
         '''
+        POROVNAT IBA SYN PAKETY, IBA ZACIATOK SPOJENIA, mozno aj pre window
         Get number of inconsistent TTL values
         If the TTL value is different in the same communication, it is considered suspicious
         Args:
@@ -56,4 +57,38 @@ class InternetLayer():
             if len(stream_ttls) > 2:
                 failed += len(channels[stream])
             
+        return failed
+    
+    def get_inconsistent_fragmentation(self):
+        '''
+        Get number of packets with inconsistent fragmentation
+
+        Args:
+        
+        Returns:
+            int: number of packets with inconsistent fragmentation
+        '''
+
+        packets = self.session.query(Packet).filter(Packet.id_pcap == self.id_pcap and Packet.ip_identification != 0 and Packet.ip_identification is not None).all()
+
+        # save packets to dictionary by ip_identification
+        ip_identifications = {}
+        for packet in packets:
+            if packet.ip_identification not in ip_identifications:
+                ip_identifications[packet.ip_identification] = []
+            
+            ip_identifications[packet.ip_identification].append(packet)
+
+        failed = 0
+
+        for id in ip_identifications:
+            if len(ip_identifications[id]) == 1:
+                if ip_identifications[id][0].ip_flag == 1 or ip_identifications[id][0].ip_fragment_offset != 0:
+                    failed += 1
+            if len(ip_identifications[id]) > 1:
+                for i in range(len(ip_identifications[id])):
+                    if (i != len(ip_identifications[id]) - 1 and ip_identifications[id][i].ip_flag != 1) or (i == 0 and ip_identifications[id][i].ip_fragment_offset != 0):
+                        failed += 1
+                        break
+
         return failed

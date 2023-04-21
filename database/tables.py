@@ -34,6 +34,8 @@ class Packet(Base):
     port_dst = Column(Integer)
     seq = Column(Integer)
     ack = Column(Integer)
+    tcp_segment_len = Column(Integer)
+    tcp_flags = Column(String)
     window = Column(Integer)
     eth_src = Column(String)
     eth_dst = Column(String)
@@ -47,6 +49,12 @@ class Packet(Base):
     mss = Column(Integer)
     tls_msg_type = Column(Integer)
     tls_ciphers = Column(String)
+    dhcp_yiaddr = Column(String)
+    icmp_type = Column(Integer)
+    user_agent = Column(String)
+    ip_flag = Column(Integer)
+    ip_fragment_offset = Column(Integer)
+    ip_identification = Column(Integer)
     pcap = relationship("Pcap", back_populates="packets")
 
 class Pcap(Base):

@@ -121,19 +121,18 @@ class Functions():
         Returns:
             dict: dictionary of MAC addresses and their IP addresses
         '''
-        pkts = self.session.query(Packet).filter(Packet.id_pcap == self.id_pcap).all()
+        pkts = self.session.query(Packet).filter(Packet.id_pcap == self.id_pcap and Packet.type == 2048).all()
         macs = {}
         for pkt in pkts:
-            if pkt.type == 2048:
-                if macs.get(pkt.ip_src) == None:
-                    macs[pkt.ip_src] = [pkt.eth_src]
-                else:
-                    macs[pkt.ip_src].append(pkt.eth_src)
+            if macs.get(pkt.ip_src) == None:
+                macs[pkt.ip_src] = [pkt.eth_src]
+            else:
+                macs[pkt.ip_src].append(pkt.eth_src)
 
-                if macs.get(pkt.ip_dst) == None:
-                    macs[pkt.ip_dst] = [pkt.eth_dst]
-                else:
-                    macs[pkt.ip_dst].append(pkt.eth_dst)
+            if macs.get(pkt.ip_dst) == None:
+                macs[pkt.ip_dst] = [pkt.eth_dst]
+            else:
+                macs[pkt.ip_dst].append(pkt.eth_dst)
 
         return macs
     
@@ -146,12 +145,11 @@ class Functions():
             set: set of MAC addresses
         '''
         arp_macs = []
-        pkts = self.session.query(Packet).filter(Packet.id_pcap == self.id_pcap).all()
+        pkts = self.session.query(Packet).filter(Packet.id_pcap == self.id_pcap and Packet.type == 2054).all()
 
         for pkt in pkts:
-            if pkt.type == 2054:
-                arp_macs.append(pkt.eth_src)
-                arp_macs.append(pkt.eth_dst)
+            arp_macs.append(pkt.eth_src)
+            arp_macs.append(pkt.eth_dst)
                 
         return set(arp_macs)
     
@@ -174,7 +172,38 @@ class Functions():
                     streams[key].append(row)
         return streams
     
-    def get_communication_channels(self, pkts):
+    def get_dhcp_ips(self, pkts):
+        '''
+        Get DHCP IP addresses from the pcap file
+        Args:
+            pkts (list): list of packets
+
+        Returns:
+            set: list of DHCP IP addresses
+        '''
+        ips = []
+        for row in pkts:
+            if row.dhcp_yiaddr is not None:
+                ips.append(row.dhcp_yiaddr)
+        return set(ips)
+    
+    def get_non_dhcp_ips(self, pkts):
+        '''
+        Get non-DHCP IP addresses from the pcap file
+        Args:
+            pkts (list): list of packets
+
+        Returns:
+            set: list of non-DHCP IP addresses
+        '''
+        ips = []
+        for row in pkts:
+            if row.dhcp_yiaddr is None:
+                ips.append(row.ip_src)
+                ips.append(row.ip_dst)
+        return set(ips)
+    
+    def get_communication_channels(self, pkts, onlyTCP = True):
         '''
         Get communication channels from the pcap file
         Args:
@@ -185,7 +214,9 @@ class Functions():
         '''
         streams = {}
         for row in pkts:
-            if row.type == 2048 and row.protocol == 6:
+            if row.type == 2048:
+                if onlyTCP and row.protocol != 6:
+                    continue
                 key = (row.ip_src, row.ip_dst)
                 if key not in streams:
                     streams[key] = [row]
@@ -207,3 +238,35 @@ class Functions():
             UDPS = set(json.load(f))
 
         return {6: TCPS, 17: UDPS}
+    
+    def get_icmp_ips(self):
+        '''
+        Get all IP addresses from ICMP destination unreachable packets
+        Args:
+
+        Returns:
+            set: set of IP addresses
+        '''
+        ips = []
+        pkts = self.session.query(Packet).filter(Packet.id_pcap == self.id_pcap and Packet.icmp_type == 3).all()
+
+        for pkt in pkts:
+            ips.append(pkt.ip_dst)
+
+        return set(ips)
+    
+    def get_non_icmp_ips(self):
+        '''
+        Get non ICMP IP addresses from the pcap file
+        Args:
+
+        Returns:
+            set: set of IP addresses
+        '''
+        ips = []
+        pkts = self.session.query(Packet).filter(Packet.id_pcap == self.id_pcap and Packet.icmp_type == None).all()
+
+        for pkt in pkts:
+            ips.append(pkt.ip_dst)
+
+        return set(ips)

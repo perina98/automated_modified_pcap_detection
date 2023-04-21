@@ -40,6 +40,10 @@ class Miscellaneous():
         if packet.haslayer(IP):
             protocol = packet[IP].proto
             if protocol in self.protocols:
+                if not packet.haslayer(TCP) and protocol == 6:
+                    return False
+                elif not packet.haslayer(UDP) and protocol == 17:
+                    return False
                 sport = packet[TCP].sport if protocol == 6 else packet[UDP].sport
                 dport = packet[TCP].dport if protocol == 6 else packet[UDP].dport
                 if sport not in self.protocols[protocol] and dport not in self.protocols[protocol]:
@@ -85,8 +89,6 @@ class Miscellaneous():
             (original_checksums["UDP"] != None and original_checksums["UDP"] != packet[UDP].chksum) or \
             (original_checksums["IP"] != None and original_checksums["IP"] != packet[IP].chksum) or \
             (original_checksums["ICMP"] != None and original_checksums["ICMP"] != packet[ICMP].chksum):    
-            print ("Checksums are not equal")
-            print(packet.time, packet.summary())
             modified = True
 
         return modified

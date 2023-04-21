@@ -87,6 +87,14 @@ class Database():
             'mss': None,
             'tls_msg_type': None,
             'tls_ciphers': None,
+            'tcp_segment_len': None,
+            'tcp_flags': None,
+            'dhcp_yiaddr': None,
+            'icmp_type': None,
+            'user_agent': None,
+            'ip_flag': None,
+            'ip_fragment_offset': None,
+            'ip_identification': None
         }
 
         if pkt.haslayer(IP):
@@ -94,6 +102,9 @@ class Database():
             pkt_data['ip_src'] = pkt[IP].src
             pkt_data['ip_dst'] = pkt[IP].dst
             pkt_data['ttl'] = pkt[IP].ttl
+            pkt_data['ip_flag'] = int(pkt[IP].flags)
+            pkt_data['ip_fragment_offset'] = pkt[IP].frag
+            pkt_data['ip_identification'] = pkt[IP].id
 
             if pkt.haslayer(TCP):
                 pkt_data['port_src'] = pkt[TCP].sport
@@ -101,6 +112,8 @@ class Database():
                 pkt_data['seq'] = pkt[TCP].seq
                 pkt_data['ack'] = pkt[TCP].ack
                 pkt_data['window'] = pkt[TCP].window
+                pkt_data['tcp_segment_len'] = len(pkt[TCP]) - pkt[TCP].dataofs * 4
+                pkt_data['tcp_flags'] = str(pkt[TCP].flags)
                 if 'MSS' in pkt[TCP].options:
                     pkt_data['mss'] = pkt[TCP].options['MSS']
             elif pkt.haslayer(UDP):
@@ -146,6 +159,9 @@ class Database():
         except (AttributeError, IndexError):
             pass
 
+        if pkt.haslayer(DHCP) and pkt.haslayer(BOOTP):
+            pkt_data['dhcp_yiaddr'] = pkt[BOOTP].yiaddr
+
         if pkt.haslayer(ARP):
             pkt_data['arp_op'] = pkt[ARP].op
             pkt_data['arp_ip_src'] = pkt[ARP].psrc
@@ -161,6 +177,20 @@ class Database():
             except (AttributeError, IndexError):
                 pass
 
+        if pkt.haslayer(ICMP):
+            pkt_data['icmp_type'] = pkt[ICMP].type
+
+        if pkt.haslayer(TCP) and pkt.haslayer(Raw):
+            raw_data = pkt[Raw].load
+            if "HTTP" in str(raw_data):
+                http_headers = str(raw_data).split("\\r\\n\\r\\n")[0]
+                user_agent = None
+                for line in http_headers.split("\\r\\n"):
+                    if "User-Agent:" in line:
+                        user_agent = line.split("User-Agent: ")[1]
+                        break
+                pkt_data['user_agent'] = user_agent
+
 
 
         pkt_data['length'] = len(pkt)
@@ -175,6 +205,8 @@ class Database():
             port_dst=pkt_data['port_dst'],
             seq=pkt_data['seq'],
             ack=pkt_data['ack'],
+            tcp_segment_len=pkt_data['tcp_segment_len'],
+            tcp_flags=pkt_data['tcp_flags'],
             window=pkt_data['window'],
             eth_src=pkt_data['eth_src'],
             eth_dst=pkt_data['eth_dst'],
@@ -187,6 +219,12 @@ class Database():
             mss=pkt_data['mss'],
             tls_msg_type=pkt_data['tls_msg_type'],
             tls_ciphers=pkt_data['tls_ciphers'],
+            dhcp_yiaddr=pkt_data['dhcp_yiaddr'],
+            icmp_type=pkt_data['icmp_type'],
+            user_agent=pkt_data['user_agent'],
+            ip_flag=pkt_data['ip_flag'],
+            ip_fragment_offset=pkt_data['ip_fragment_offset'],
+            ip_identification=pkt_data['ip_identification'],
             id_pcap=id_pcap
         )
         session.add(new_packet)

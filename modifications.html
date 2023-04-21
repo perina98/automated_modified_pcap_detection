@@ -126,7 +126,7 @@
                     <td class="tg-btxf">-</td>
                     <td class="tg-btxf">-</td>
                     <td class="tg-btxf">HTTP: Different user agent</td>
-                    <td class="tg-btxf">-</td>
+                    <td class="tg-btxf">application_layer.py: get_inconsistent_user_agent()</td>
                     <td class="tg-btxf">-</td>
                     <td class="tg-btxf">-</td>
                     <td class="tg-btxf">
@@ -139,9 +139,9 @@
                 </tr>
                 <tr>
                     <td class="tg-0pky">TLS: Certificate transparency check</td>
-                    <td class="tg-btxf">-</td>
-                    <td class="tg-btxf">-</td>
-                    <td class="tg-0pky">-</td>
+                    <td class="tg-btxf">?</td>
+                    <td class="tg-btxf">?</td>
+                    <td class="tg-btxf">?</td>
                     <td class="tg-0pky">HTTP: Unvisited host from referer</td>
                     <td class="tg-btxf">-</td>
                     <td class="tg-btxf">-</td>
@@ -165,15 +165,15 @@
                     <td class="tg-btxf">
                         NTP/HTTP: Date field values inconsistency
                     </td>
-                    <td class="tg-btxf">-</td>
-                    <td class="tg-btxf">-</td>
-                    <td class="tg-btxf">-</td>
+                    <td class="tg-btxf">?</td>
+                    <td class="tg-btxf">?</td>
+                    <td class="tg-btxf">?</td>
                 </tr>
                 <tr>
                     <td class="tg-0pky">
                         IPv4/IPv6: Sudden drop in traffic for a given address
                     </td>
-                    <td class="tg-btxf">?</td>
+                    <td class="tg-btxf">transport_layer.py: get_incomplete_tcp_streams()</td>
                     <td class="tg-btxf">?</td>
                     <td class="tg-btxf">?</td>
                     <td class="tg-0pky">
@@ -214,9 +214,9 @@
                         ICMP: Host unreachable message with destination host
                         address
                     </td>
-                    <td class="tg-btxf">?</td>
-                    <td class="tg-btxf">?</td>
-                    <td class="tg-btxf">?</td>
+                    <td class="tg-btxf">application_layer.py: get_missing_icmp_ips()</td>
+                    <td class="tg-btxf">-</td>
+                    <td class="tg-btxf">-</td>
                     <td class="tg-0pky">
                         IPv4/IPv6: Various TTLs for the same IP address
                     </td>
@@ -226,7 +226,7 @@
                     <td class="tg-0pky">
                         IPv4/IPv6: Sudden drop in traffic for a given address
                     </td>
-                    <td class="tg-btxf">?</td>
+                    <td class="tg-btxf">transport_layer.py: get_incomplete_tcp_streams()</td>
                     <td class="tg-btxf">?</td>
                     <td class="tg-btxf">?</td>
                 </tr>
@@ -234,9 +234,9 @@
                     <td class="tg-btxf">
                         DHCP: Offer message for a host without connections
                     </td>
-                    <td class="tg-btxf">-</td>
-                    <td class="tg-btxf">-</td>
-                    <td class="tg-btxf">-</td>
+                    <td class="tg-btxf">application_layer.py: get_missing_dhcp_ips()</td>
+                    <td class="tg-buh4">-</td>
+                    <td class="tg-buh4">-</td>
                     <td class="tg-btxf">
                         IPv4/IPv6: Inconsistent interpacket gaps
                     </td>
@@ -247,7 +247,7 @@
                         IPv4/IPv6: Various protocol field values for the same IP
                         address
                     </td>
-                    <td class="tg-btxf">?</td>
+                    <td class="tg-btxf">jedna ip adresa moze kludne mat tcp/upd / dns / icmp ...  </td>
                     <td class="tg-btxf">?</td>
                     <td class="tg-btxf">?</td>
                 </tr>
@@ -265,9 +265,9 @@
                     <td class="tg-btxf">-</td>
                     <td class="tg-0pky">-</td>
                     <td class="tg-0pky">
-                        IPv4/IPv6: Inconsistent protocol behaviour
+                        IPv4/IPv6: Inconsistent protocol behaviour (fragmentation)
                     </td>
-                    <td class="tg-btxf">-</td>
+                    <td class="tg-btxf">internet_layer.py: get_inconsistent_fragmentation()</td>
                     <td class="tg-btxf">-</td>
                     <td class="tg-0pky">-</td>
                 </tr>
@@ -336,9 +336,9 @@
                         ICMP: Host unreachable message with destination host
                         address
                     </td>
-                    <td class="tg-btxf">?</td>
-                    <td class="tg-btxf">?</td>
-                    <td class="tg-btxf">?</td>
+                    <td class="tg-btxf">application_layer.py: get_missing_icmp_ips()</td>
+                    <td class="tg-btxf">-</td>
+                    <td class="tg-btxf">-</td>
                 </tr>
                 <tr>
                     <td class="tg-buh4"></td>
@@ -352,9 +352,9 @@
                     <td class="tg-buh4">
                         DHCP: Offer message for a host without connections
                     </td>
-                    <td class="tg-btxf">?</td>
-                    <td class="tg-buh4">?</td>
-                    <td class="tg-buh4">?</td>
+                    <td class="tg-btxf">application_layer.py: get_missing_dhcp_ips()</td>
+                    <td class="tg-buh4">-</td>
+                    <td class="tg-buh4">-</td>
                 </tr>
                 <tr>
                     <td class="tg-0pky"></td>

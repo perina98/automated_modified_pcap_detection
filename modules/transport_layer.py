@@ -84,7 +84,7 @@ class TransportLayer():
     
     def get_inconsistent_window(self):
         '''
-        !!!!! TOTO TREBA OVERIT !!!!!
+        !!!!! TOTO TREBA OVERIT !!!!!, mozno iba pre SYN pakety
         Check if the window size value is different in the same communication
         Args:
 
@@ -125,7 +125,6 @@ class TransportLayer():
                     if len(stream_ciphers['client']) > 1:
                         # compare the ciphers, the two lists should be the same, order doesn't matter
                         if set(stream_ciphers['client']) != set(json.loads(streams[stream][i].tls_ciphers)):
-                            print(set(stream_ciphers['client']), set(json.loads(streams[stream][i].tls_ciphers)))
                             failed += 1
                             break
                     stream_ciphers['client'] = list(set(stream_ciphers['client'] + json.loads(streams[stream][i].tls_ciphers)))
@@ -142,5 +141,66 @@ class TransportLayer():
             if p == 0 and len(stream_ciphers['server']) > 0 and len(stream_ciphers['client']) > 0:
                 failed += len(streams[stream])
                 break
+
+        return failed
+
+    def get_incomplete_tcp_streams(self):
+        '''
+        WIP
+        Check TCP stream seq numbers, WIP
+        Args:
+
+        Returns:
+            int: Number of packets with incomplete TCP streams
+        '''
+
+        streams = self.functions.get_tcp_streams(self.session.query(Packet).filter(Packet.id_pcap == self.id_pcap).all())
+        failed = 0
+
+        for stream in streams:
+            if streams[stream][0].tcp_flags != 'S':
+                failed += len(streams[stream])
+                continue
+            if not 'R' in streams[stream][-1].tcp_flags and not 'F' in streams[stream][-1].tcp_flags:
+                failed += len(streams[stream])
+                continue
+            
+            initiator_port = streams[stream][0].port_src
+            target_port = streams[stream][0].port_dst
+
+            ports = set([initiator_port, target_port])  # set of communicating ports
+            seq_nums = {p: 0 for p in ports}  # current expected seq numbers
+
+            for i in range(len(streams[stream])):
+                port = streams[stream][i].port_src
+                seq = streams[stream][i].seq
+                tcp_segment_length = streams[stream][i].tcp_segment_len
+                tcp_flags = streams[stream][i].tcp_flags
+
+                if tcp_flags == 'S':
+                    seq_nums[initiator_port] = seq + 1
+                    continue
+
+                if tcp_flags == 'SA':
+                    seq_nums[target_port] = seq + 1
+                    continue
+
+                if port == initiator_port:
+                    if seq != seq_nums[initiator_port]:
+                        #print ('seq mismatch', seq, seq_nums[initiator_port])
+                        failed += 1
+                    else:
+                        pass
+                        #print('checked seq ', seq, seq_nums[initiator_port])
+
+                elif port == target_port and i+1 < len(streams[stream]):
+                    if seq != seq_nums[target_port] and streams[stream][i+1].port_src == initiator_port:
+                        #print('seq target mismatch', seq, seq_nums[target_port])
+                        failed += 1
+                    else:
+                        pass
+                        #print('checked seq ', seq, seq_nums[target_port])
+
+                seq_nums[port] = seq + tcp_segment_length
 
         return failed

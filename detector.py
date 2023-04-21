@@ -318,6 +318,11 @@ class Detector():
             'inconsistent_mss': 0,
             'inconsistent_window_size': 0,
             'mismatched_ciphers': 0,
+            'incomplete_tcp_streams': 0,
+            'missing_dhcp_ips': 0,
+            'missing_icmp_ips': 0,
+            'inconsistent_user_agent': 0,
+            'inconsistent_fragmentation': 0,
         }
 
         pcap_modifications = {
@@ -358,14 +363,16 @@ class Detector():
             self.log.debug("Running internet layer tests")
             internet_layer_mod = internet_layer.InternetLayer(id_pcap, session)
             packet_modifications["inconsistent_ttls"] = internet_layer_mod.get_inconsistent_ttls()
+            packet_modifications["inconsistent_fragmentation"] = internet_layer_mod.get_inconsistent_fragmentation()
 
         if self.config['tests']['transport_layer']:
             self.log.debug("Running transport layer tests")
             transport_layer_mod = transport_layer.TransportLayer(id_pcap, session)
             packet_modifications["inconsistent_interpacket_gaps"] = transport_layer_mod.get_inconsistent_interpacket_gaps()
             packet_modifications["inconsistent_mss"] = transport_layer_mod.get_inconsistent_mss()
-            packet_modifications["inconsistent_window_size"] = transport_layer_mod.get_inconsistent_window()
+            # packet_modifications["inconsistent_window_size"] = transport_layer_mod.get_inconsistent_window()
             packet_modifications["mismatched_ciphers"] = transport_layer_mod.get_mismatched_ciphers()
+            packet_modifications["incomplete_tcp_streams"] = transport_layer_mod.get_incomplete_tcp_streams()
 
         if self.config['tests']['application_layer']:
             self.log.debug("Running app layer tests")
@@ -375,6 +382,9 @@ class Detector():
             packet_modifications["missing_translation_of_visited_domain"] = application_layer_mod.get_missing_translation_of_visited_domain()
             packet_modifications["translation_of_unvisited_domains"] = application_layer_mod.get_translation_of_unvisited_domains()
             packet_modifications["incomplete_ftp"] = application_layer_mod.get_incomplete_ftp()
+            packet_modifications["missing_dhcp_ips"] = application_layer_mod.get_missing_dhcp_ips()
+            packet_modifications["missing_icmp_ips"] = application_layer_mod.get_missing_icmp_ips()
+            packet_modifications["inconsistent_user_agent"] = application_layer_mod.get_inconsistent_user_agent()
 
 
         self.print_results(pcap_path, packet_count, pcap_modifications, packet_modifications)
