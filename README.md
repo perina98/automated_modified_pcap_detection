@@ -13,8 +13,9 @@ Requirements for this scipts are the following:
 ```
 capinfos
 python 3.8 or higher
-sqlalchemy
-scapy
+sqlalchemy v2.0.9
+scapy v2.4.5
+pyyaml v6.0
 ```
 
 In order to generate dataset you will also need the following:
@@ -28,6 +29,7 @@ Use the package manager [pip](https://pip.pypa.io/en/stable/) to install require
 ```bash
 pip install sqlalchemy
 pip install scapy
+pip install pyyaml
 ```
 
 Alternatively, you can just run this command that will install the requirements.
@@ -37,6 +39,9 @@ make install
 
 ## Usage
 
+Before running the app, check config.yml file and set your preferences there.
+It is possible to set different name for database file, packet save chunk size and which tests to run.
+
 ```bash
 python main.py --input_pcap input.pcap
 ```
@@ -44,6 +49,7 @@ python main.py --input_pcap input.pcap
 ## Options
 
 ```
+-c, --config           Config file, required option
 -i, --input_pcap       Input PCAP file path
 -d, --dataset_dir      Dataset directory path
 -l, --log              Log level
