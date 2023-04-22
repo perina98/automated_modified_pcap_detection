@@ -39,8 +39,6 @@ class Packet(Base):
     window = Column(Integer)
     eth_src = Column(String)
     eth_dst = Column(String)
-    id_pcap = Column(Integer, ForeignKey('pcap.id_pcap'))
-    length = Column(Integer)
     dns = Column(String)
     arp_op = Column(Integer)
     arp_ip_src = Column(String)
@@ -55,6 +53,8 @@ class Packet(Base):
     ip_flag = Column(Integer)
     ip_fragment_offset = Column(Integer)
     ip_identification = Column(Integer)
+    length = Column(Integer)
+    id_pcap = Column(Integer, ForeignKey('pcap.id_pcap'))
     pcap = relationship("Pcap", back_populates="packets")
 
 class Pcap(Base):

@@ -46,9 +46,10 @@ class InternetLayer():
 
         failed = 0
         for stream in channels:
-            channels[stream].sort(key=lambda x: x.packet_timestamp)
             stream_ttls = {}
             for i in range(len(channels[stream])):
+                if channels[stream][i].tcp_flags != 'S':
+                    continue
                 if channels[stream][i].ttl not in stream_ttls:
                     stream_ttls[channels[stream][i].ttl] = 1
                 else:
@@ -56,13 +57,13 @@ class InternetLayer():
             
             if len(stream_ttls) > 2:
                 failed += len(channels[stream])
-            
+
         return failed
     
     def get_inconsistent_fragmentation(self):
         '''
         Get number of packets with inconsistent fragmentation
-
+        Also checks for ip_identification = 0, which indicates issues with the packet
         Args:
         
         Returns:
@@ -70,25 +71,25 @@ class InternetLayer():
         '''
 
         packets = self.session.query(Packet).filter(Packet.id_pcap == self.id_pcap and Packet.ip_identification != 0 and Packet.ip_identification is not None).all()
-
-        # save packets to dictionary by ip_identification
-        ip_identifications = {}
-        for packet in packets:
-            if packet.ip_identification not in ip_identifications:
-                ip_identifications[packet.ip_identification] = []
-            
-            ip_identifications[packet.ip_identification].append(packet)
+     
+        ip_identifications_by_stream = {}
+        channels = self.functions.get_communication_channels(packets, False)
+        for stream in channels:
+            for packet in channels[stream]:
+                if (packet.ip_src, packet.ip_dst, packet.ip_identification) not in ip_identifications_by_stream:
+                    ip_identifications_by_stream[(packet.ip_src, packet.ip_dst, packet.ip_identification)] = []
+                
+                ip_identifications_by_stream[(packet.ip_src, packet.ip_dst, packet.ip_identification)].append(packet)
 
         failed = 0
-
-        for id in ip_identifications:
-            if len(ip_identifications[id]) == 1:
-                if ip_identifications[id][0].ip_flag == 1 or ip_identifications[id][0].ip_fragment_offset != 0:
+       
+        for stream in ip_identifications_by_stream:
+            if len(ip_identifications_by_stream[stream]) == 1:
+                if ip_identifications_by_stream[stream][0].ip_flag == 1 or ip_identifications_by_stream[stream][0].ip_fragment_offset != 0:
                     failed += 1
-            if len(ip_identifications[id]) > 1:
-                for i in range(len(ip_identifications[id])):
-                    if (i != len(ip_identifications[id]) - 1 and ip_identifications[id][i].ip_flag != 1) or (i == 0 and ip_identifications[id][i].ip_fragment_offset != 0):
+            if len(ip_identifications_by_stream[stream]) > 1:
+                for i in range(len(ip_identifications_by_stream[stream])):
+                    if (i != len(ip_identifications_by_stream[stream]) - 1 and ip_identifications_by_stream[stream][i].ip_flag != 1) or (i == 0 and ip_identifications_by_stream[stream][i].ip_fragment_offset != 0):
                         failed += 1
                         break
-
         return failed

@@ -76,6 +76,9 @@ class Detector():
             if not self.args.input_pcap.endswith(".pcap"):
                 print('Input file is not pcap')
                 exit(1)
+            if not os.path.exists(self.args.input_pcap):
+                print('Input file does not exist')
+                exit(1)
             id_pcap = self.db.save_pcap(session, self.args.input_pcap)
             self.check_pcap(self.args.input_pcap, id_pcap)
             exit(0)
@@ -110,7 +113,13 @@ class Detector():
         '''
         self.log.debug("Getting pcap header data")
         cmd = ['capinfos', '-M', pcap_path]
-        output = subprocess.check_output(cmd, universal_newlines=True)
+        result = subprocess.run(cmd, universal_newlines=True, capture_output=True, text=True)
+        exit_code = result.returncode
+        if exit_code != 0:
+            self.log.error("Error while getting pcap header data. Pcap file might be corrupted.")
+            exit(1)
+        output = result.stdout
+        exit_code = 0
         lines = output.strip().split('\n')
         data = {}
         data['snaplenlimit'] = 0
@@ -160,7 +169,7 @@ class Detector():
         
         packet_modifications = {
             'mismatched_checksums': int(miscellaneous_mod.check_checksum(packet)),
-            'mismatched_protocols': int(miscellaneous_mod.check_protocol(packet)),
+            'mismatched_protocols': int(miscellaneous_mod.check_ports(packet)),
             'incorrect_packet_length': int(miscellaneous_mod.check_packet_length(packet)),
             'invalid_packet_payload': int(miscellaneous_mod.check_invalid_payload(packet)),
             'insuficient_capture_length': int(miscellaneous_mod.check_frame_len_and_cap_len(packet)),

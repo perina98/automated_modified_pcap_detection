@@ -136,12 +136,14 @@ class ApplicationLayer():
             f = False
             cname_context = []
             for idx,an in enumerate(self.dns_pairs[pair]['answers']):
-                if an['atype'] == 5:
+                if an['atype'] == 5: # CNAME
                     cname_context.append(an['answer']['rdata'])
                     if idx == 0:
                         continue
+                    # rdata in the previous answer should be the same as the rrname in the current answer, if it is CNAME
                     if cname_context[-2] != an['answer']['rrname']:
                         f = True
+                        break
             failed += 1 if f else 0
 
         return failed
@@ -174,12 +176,10 @@ class ApplicationLayer():
         failed = 0
 
         for pkt in pkts:
-            if self.functions.is_private_ip(pkt.ip_src) or self.functions.is_private_ip(pkt.ip_dst):
-                continue
-            if pkt.ip_src in ip_addresses:
+            if not self.functions.is_private_ip(pkt.ip_src) and pkt.ip_src in ip_addresses:
                 if pkt.packet_timestamp < min(ip_addresses[pkt.ip_src]):
                     failed += 1
-            if pkt.ip_dst in ip_addresses:
+            if not self.functions.is_private_ip(pkt.ip_dst) and pkt.ip_dst in ip_addresses:
                 if pkt.packet_timestamp < min(ip_addresses[pkt.ip_dst]):
                     failed += 1
 

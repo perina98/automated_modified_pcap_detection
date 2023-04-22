@@ -43,7 +43,7 @@ Before running the app, check config.yml file and set your preferences there.
 It is possible to set different name for database file, packet save chunk size and which tests to run.
 
 ```bash
-python main.py --input_pcap input.pcap
+python main.py --config config.yml --input_pcap input.pcap
 ```
 
 ## Options

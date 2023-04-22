@@ -25,7 +25,7 @@ class Database():
     '''
     def ensure_db(self, engine, database):
         '''
-        Ensure database exists and create tables if not
+        Ensure database exists and create tables
         Args:
             engine: sqlalchemy engine
             database: database path
@@ -97,6 +97,7 @@ class Database():
             'ip_identification': None
         }
 
+        # save IP layer data
         if pkt.haslayer(IP):
             pkt_data['protocol'] = pkt[IP].proto
             pkt_data['ip_src'] = pkt[IP].src
@@ -105,7 +106,8 @@ class Database():
             pkt_data['ip_flag'] = int(pkt[IP].flags)
             pkt_data['ip_fragment_offset'] = pkt[IP].frag
             pkt_data['ip_identification'] = pkt[IP].id
-
+            
+            # save TCP layer data
             if pkt.haslayer(TCP):
                 pkt_data['port_src'] = pkt[TCP].sport
                 pkt_data['port_dst'] = pkt[TCP].dport
@@ -116,10 +118,13 @@ class Database():
                 pkt_data['tcp_flags'] = str(pkt[TCP].flags)
                 if 'MSS' in pkt[TCP].options:
                     pkt_data['mss'] = pkt[TCP].options['MSS']
+
+            # save UDP layer data
             elif pkt.haslayer(UDP):
                 pkt_data['port_src'] = pkt[UDP].sport
                 pkt_data['port_dst'] = pkt[UDP].dport
 
+        # save DNS layer data
         if pkt.haslayer(DNS):
             dns_data = {
                 'id': pkt[DNS].id,
@@ -155,18 +160,20 @@ class Database():
             pkt_data['type'] = pkt.type
             pkt_data['eth_src'] = pkt[Ether].src
             pkt_data['eth_dst'] = pkt[Ether].dst
-        # some packets don't have Ether layer or type
         except (AttributeError, IndexError):
             pass
-
+        
+        # save DHCP / BOOTP layer data
         if pkt.haslayer(DHCP) and pkt.haslayer(BOOTP):
             pkt_data['dhcp_yiaddr'] = pkt[BOOTP].yiaddr
 
+        # save ARP layer data
         if pkt.haslayer(ARP):
             pkt_data['arp_op'] = pkt[ARP].op
             pkt_data['arp_ip_src'] = pkt[ARP].psrc
             pkt_data['arp_ip_dst'] = pkt[ARP].pdst
 
+        # save TLS layer data
         if pkt.haslayer(TLS):
             try:
                 pkt_data['tls_msg_type'] = pkt[TLS].msg[0].msgtype
@@ -176,10 +183,12 @@ class Database():
                     pkt_data['tls_ciphers'] = json.dumps(pkt[TLS].msg[0].cipher)
             except (AttributeError, IndexError):
                 pass
-
+        
+        # save ICMP layer data
         if pkt.haslayer(ICMP):
             pkt_data['icmp_type'] = pkt[ICMP].type
 
+        # save HTTP layer data
         if pkt.haslayer(TCP) and pkt.haslayer(Raw):
             raw_data = pkt[Raw].load
             if "HTTP" in str(raw_data):
@@ -195,6 +204,7 @@ class Database():
 
         pkt_data['length'] = len(pkt)
         
+        # build Packet object
         new_packet = Packet(
             packet_timestamp=pkt.time,
             type=pkt_data['type'],

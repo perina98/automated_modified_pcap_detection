@@ -28,22 +28,22 @@ class Miscellaneous():
         self.protocols = functions.Functions().get_protocols()
         self.snaplen_context = []
 
-    def check_protocol(self, packet):
+    def check_ports(self, packet):
         '''
         Check the packet protocol number vs its port on both sides
         Args:
             packet (mixed): packet
 
         Returns:
-            bool: True if the protocol number is not consistent with the port number False otherwise
+            bool: True if the protocol number is not consistent with the port number, False otherwise
         '''
         if packet.haslayer(IP):
             protocol = packet[IP].proto
             if protocol in self.protocols:
                 if not packet.haslayer(TCP) and protocol == 6:
-                    return False
+                    return True
                 elif not packet.haslayer(UDP) and protocol == 17:
-                    return False
+                    return True
                 sport = packet[TCP].sport if protocol == 6 else packet[UDP].sport
                 dport = packet[TCP].dport if protocol == 6 else packet[UDP].dport
                 if sport not in self.protocols[protocol] and dport not in self.protocols[protocol]:
@@ -52,12 +52,12 @@ class Miscellaneous():
 
     def check_checksum(self,packet):
         '''
-        Constructor
+        Check if the checksum is correct for TCP, UDP, IP and ICMP
         Args:
             packet (scapy packet): packet to check
 
         Returns:
-            bool: True if at least one checksum is incorrect False otherwise
+            bool: True if at least one checksum is incorrect, False otherwise
         '''
         modified = False
         original_checksums = {
@@ -83,6 +83,7 @@ class Miscellaneous():
             original_checksums["ICMP"] = packet[ICMP].chksum
             del packet[ICMP].chksum
 
+        # force recalculation of checksums
         packet = packet.__class__(bytes(packet))
 
         if (original_checksums["TCP"] != None and original_checksums["TCP"] != packet[TCP].chksum) or \
@@ -104,20 +105,14 @@ class Miscellaneous():
         '''
 
         length = len(packet)
-        rawlen = 0
 
-        if packet.haslayer(Raw):
-            rawlen = len(packet[Raw])
-
-        if packet.haslayer(Ether):
-            if len(packet) != length:
-                return True
-        
         # Ethernet header
         length -= 14
 
+        if packet.haslayer(Padding):
+            length -= len(packet[Padding])
+        
         if packet.haslayer(IP):
-            # length - Ethernet header
             if packet[IP].len != length:
                 return True
             
@@ -129,25 +124,23 @@ class Miscellaneous():
                 return True
             # UDP header
             length -= 8
-
         if packet.haslayer(TCP):
+            if packet.haslayer(Padding):
+                length += len(packet[Padding])
             if length != len(packet[TCP]):
                 return True
             # TCP header
             length -= packet[TCP].dataofs * 4
-
         if packet.haslayer(TLS):
             # packet[TLS].len is the length of the TLS record
             # payload is the length of the TLS record payload
             # 5 is the length of the TLS record header
             payload = packet[TLS].payload
-            if length != packet[TLS].len + 5 + len(payload):
+            if length != packet[TLS].deciphered_len + 5 + len(payload):
                 return True
-            
         if packet.haslayer(NTP):
             if length != 48:
                 return True
-        
         return False
     
     def check_invalid_payload(self, packet):

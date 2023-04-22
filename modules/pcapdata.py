@@ -43,6 +43,7 @@ class PcapData():
 
         plen = len(packets)
 
+        # go over all packets and check if the length is bigger than snaplen limit
         for packet in packets:
             if packet.length > pcap_snaplen_limit:
                 return True
@@ -51,10 +52,14 @@ class PcapData():
             else:
                 capture_context[packet.length] += 1
 
+        # calculate relative frequency of each length
         for key in capture_context:
             capture_context[key] = capture_context[key] / plen
 
-        if max(capture_context.values()) > 0.5 and len(capture_context) > 1:
+
+        # check if there is a length that is more than 50% of all packets
+        # this could mean that the snaplen limit was not set correctly or that the packets were truncated
+        if len(capture_context) > 0 and max(capture_context.values()) > 0.5:
             return True
         
         return False
@@ -63,6 +68,7 @@ class PcapData():
     def check_file_data_size(self, pcap_file_size, pcap_data_size):
         '''
         Check if the file size is smaller than data size
+        This would indicate that the packets were truncated or edited
         Args:
 
         Returns:

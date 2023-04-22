@@ -7,11 +7,8 @@ all :
 	@$(MAKE) -s run_dataset
 
 dataset : clean
-ifeq ($(OS),Windows_NT)
 	mkdir dataset
-else
 	mkdir -p dataset
-endif
 	$(PYTHON) makedataset.py
 run_dataset :
 	$(PYTHON) main.py -c config.yml --dataset dataset -l debug
