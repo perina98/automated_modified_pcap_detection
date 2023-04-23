@@ -14,7 +14,7 @@ Requirements for this scipts are the following:
 capinfos
 python 3.8 or higher
 sqlalchemy v2.0.9
-scapy v2.4.5
+scapy v2.5.0
 pyyaml v6.0
 ```
 

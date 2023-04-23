@@ -158,16 +158,16 @@
                     <td class="tg-btxf">?</td>
                 </tr>
                 <tr>
-                    <td class="tg-btxf">
+                    <td class="tg-btxf needsreview">
                         TCP/UDP: Incomplete or broken connections
                     </td>
-                    <td class="tg-btxf">?</td>
-                    <td class="tg-btxf">?</td>
-                    <td class="tg-btxf">?</td>
-                    <td class="tg-btxf needsreview">TLS: Different ciphersuite list</td>
-                    <td class="tg-btxf needsreview">transport_layer.py: get_mismatched_ciphers()</td>
-                    <td class="tg-btxf needsreview">-</td>
-                    <td class="tg-btxf needsreview">-</td>
+                    <td class="tg-btxf needsreview">transport_layer.py: get_incomplete_tcp_streams()</td>
+                    <td class="tg-btxf needsreview">?</td>
+                    <td class="tg-btxf needsreview">?</td>
+                    <td class="tg-btxf checked">TLS: Different ciphersuite list</td>
+                    <td class="tg-btxf checked">transport_layer.py: get_mismatched_ciphers()</td>
+                    <td class="tg-btxf checked">-</td>
+                    <td class="tg-btxf checked">-</td>
                     <td class="tg-btxf">
                         NTP/HTTP: Date field values inconsistency
                     </td>
@@ -176,18 +176,18 @@
                     <td class="tg-btxf">?</td>
                 </tr>
                 <tr>
-                    <td class="tg-0pky needsreview">
+                    <td class="tg-0pky checked">
                         IPv4/IPv6: Sudden drop in traffic for a given address
                     </td>
-                    <td class="tg-btxf needsreview">transport_layer.py: get_incomplete_tcp_streams()</td>
-                    <td class="tg-btxf needsreview">?</td>
-                    <td class="tg-btxf needsreview">?</td>
-                    <td class="tg-0pky">
+                    <td class="tg-btxf checked">internet_layer.py: get_sudden_ip_source_traffic_drop()</td>
+                    <td class="tg-btxf checked">-</td>
+                    <td class="tg-btxf checked">-</td>
+                    <td class="tg-0pky checked">
                         TCP: Various window sizes for the same IP address
                     </td>
-                    <td class="tg-btxf">?</td>
-                    <td class="tg-btxf">?</td>
-                    <td class="tg-btxf">?</td>
+                    <td class="tg-btxf checked">transport_layer.py: get_inconsistent_window()</td>
+                    <td class="tg-btxf checked">-</td>
+                    <td class="tg-btxf checked">-</td>
                     <td class="tg-0pky">
                         TCP: Inconsistent protocol behaviour
                     </td>
@@ -229,12 +229,12 @@
                     <td class="tg-btxf checked">internet_layer.py: get_inconsistent_ttls()</td>
                     <td class="tg-btxf checked">-</td>
                     <td class="tg-0pky checked">-</td>
-                    <td class="tg-0pky needsreview">
+                    <td class="tg-0pky checked">
                         IPv4/IPv6: Sudden drop in traffic for a given address
                     </td>
-                    <td class="tg-btxf needsreview">transport_layer.py: get_incomplete_tcp_streams()</td>
-                    <td class="tg-btxf needsreview">?</td>
-                    <td class="tg-btxf needsreview">?</td>
+                    <td class="tg-btxf checked">internet_layer.py: get_sudden_ip_source_traffic_drop()</td>
+                    <td class="tg-btxf checked">-</td>
+                    <td class="tg-btxf checked">-</td>
                 </tr>
                 <tr>
                     <td class="tg-btxf checked">
@@ -243,12 +243,12 @@
                     <td class="tg-btxf checked">application_layer.py: get_missing_dhcp_ips()</td>
                     <td class="tg-buh4 checked">-</td>
                     <td class="tg-buh4 checked">-</td>
-                    <td class="tg-btxf needsreview">
+                    <td class="tg-btxf checked">
                         IPv4/IPv6: Inconsistent interpacket gaps
                     </td>
-                    <td class="tg-btxf needsreview">transport_layer.py: get_inconsistent_interpacket_gaps()</td>
-                    <td class="tg-btxf needsreview">-</td>
-                    <td class="tg-btxf needsreview">-</td>
+                    <td class="tg-btxf checked">transport_layer.py: get_inconsistent_interpacket_gaps()</td>
+                    <td class="tg-btxf checked">-</td>
+                    <td class="tg-btxf checked">-</td>
                     <td class="tg-btxf">
                         IPv4/IPv6: Various protocol field values for the same IP
                         address

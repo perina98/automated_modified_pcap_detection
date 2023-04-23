@@ -13,6 +13,7 @@ import json
 from scapy.all import *
 from database import Packet
 import ipaddress
+from sqlalchemy import and_
 
 class Functions():
     '''
@@ -77,7 +78,12 @@ class Functions():
         Returns:
             list: list of packets
         '''
-        return self.session.query(Packet).filter(Packet.id_pcap == self.id_pcap, Packet.protocol == 17).all()
+        return self.session.query(Packet).filter(
+            and_(
+                Packet.id_pcap == self.id_pcap,
+                Packet.protocol == 17
+            )
+        ).all()
 
     def get_dns_pairs(self):
         '''
@@ -121,7 +127,12 @@ class Functions():
         Returns:
             dict: dictionary of MAC addresses and their IP addresses
         '''
-        pkts = self.session.query(Packet).filter(Packet.id_pcap == self.id_pcap and Packet.type == 2048).all()
+        pkts = self.session.query(Packet).filter(
+            and_(
+                Packet.id_pcap == self.id_pcap,
+                Packet.type == 2048
+            )
+        ).all()
         macs = {}
         for pkt in pkts:
             if macs.get(pkt.ip_src) == None:
@@ -145,7 +156,12 @@ class Functions():
             set: set of MAC addresses
         '''
         arp_macs = []
-        pkts = self.session.query(Packet).filter(Packet.id_pcap == self.id_pcap and Packet.type == 2054).all()
+        pkts = self.session.query(Packet).filter(
+            and_(
+                Packet.id_pcap == self.id_pcap,
+                Packet.type == 2054
+            )
+        ).all()
 
         for pkt in pkts:
             arp_macs.append(pkt.eth_src)
@@ -153,7 +169,7 @@ class Functions():
                 
         return set(arp_macs)
     
-    def get_tcp_streams(self, pkts):
+    def get_tcp_streams(self):
         '''
         Get TCP streams from the pcap file
         Args:
@@ -162,17 +178,23 @@ class Functions():
         Returns:
             dict: dictionary of TCP streams
         '''
+        packets = self.session.query(Packet).filter(
+            and_(
+                Packet.id_pcap == self.id_pcap,
+                Packet.type == 2048,
+                Packet.protocol == 6
+            )
+        ).all()
         streams = {}
-        for row in pkts:
-            if row.type == 2048 and row.protocol == 6:
-                key = (row.ip_src, row.ip_dst) if (row.ip_src, row.ip_dst) in streams else (row.ip_dst, row.ip_src)
-                if key not in streams:
-                    streams[key] = [row]
-                else:
-                    streams[key].append(row)
+        for row in packets:
+            key = (row.ip_src, row.ip_dst) if (row.ip_src, row.ip_dst) in streams else (row.ip_dst, row.ip_src)
+            if key not in streams:
+                streams[key] = [row]
+            else:
+                streams[key].append(row)
         return streams
     
-    def get_dhcp_ips(self, pkts):
+    def get_dhcp_ips(self):
         '''
         Get DHCP IP addresses from the pcap file
         Args:
@@ -181,13 +203,17 @@ class Functions():
         Returns:
             set: list of DHCP IP addresses
         '''
+        packets = self.session.query(Packet).filter(and_(
+                Packet.id_pcap == self.id_pcap,
+                Packet.dhcp_yiaddr.isnot(None)
+            )
+        ).all()
         ips = []
-        for row in pkts:
-            if row.dhcp_yiaddr is not None:
-                ips.append(row.dhcp_yiaddr)
+        for row in packets:
+            ips.append(row.dhcp_yiaddr)
         return set(ips)
     
-    def get_non_dhcp_ips(self, pkts):
+    def get_non_dhcp_ips(self):
         '''
         Get non-DHCP IP addresses from the pcap file
         Args:
@@ -196,11 +222,15 @@ class Functions():
         Returns:
             set: list of non-DHCP IP addresses
         '''
+        packets = self.session.query(Packet).filter(and_(
+                Packet.id_pcap == self.id_pcap,
+                Packet.dhcp_yiaddr == None
+            )
+        ).all()
         ips = []
-        for row in pkts:
-            if row.dhcp_yiaddr is None:
-                ips.append(row.ip_src)
-                ips.append(row.ip_dst)
+        for row in packets:
+            ips.append(row.ip_src)
+            ips.append(row.ip_dst)
         return set(ips)
     
     def get_communication_channels(self, pkts, onlyTCP = True):
@@ -248,10 +278,15 @@ class Functions():
             set: set of IP addresses
         '''
         ips = []
-        pkts = self.session.query(Packet).filter(Packet.id_pcap == self.id_pcap and Packet.icmp_type == 3).all()
+        packets = self.session.query(Packet).filter(
+            and_(
+                Packet.id_pcap == self.id_pcap,
+                Packet.icmp_type == 3
+            )
+        ).all()
 
-        for pkt in pkts:
-            ips.append(pkt.ip_dst)
+        for packet in packets:
+            ips.append(packet.ip_dst)
 
         return set(ips)
     
@@ -264,9 +299,38 @@ class Functions():
             set: set of IP addresses
         '''
         ips = []
-        pkts = self.session.query(Packet).filter(Packet.id_pcap == self.id_pcap and Packet.icmp_type == None).all()
+        packets = self.session.query(Packet).filter(
+            and_(
+                Packet.id_pcap == self.id_pcap,
+                Packet.icmp_type == None
+            )
+        ).all()
 
-        for pkt in pkts:
-            ips.append(pkt.ip_dst)
+        for packet in packets:
+            ips.append(packet.ip_src)
+            ips.append(packet.ip_dst)
 
         return set(ips)
+
+    def get_streams_for_ip_source(self):
+        '''
+        Get streams for IP source from the pcap file
+        Args:
+
+        Returns:
+            dict: dictionary of streams for IP source
+        '''
+        packets = self.session.query(Packet).filter(
+            and_(
+                Packet.id_pcap == self.id_pcap,
+                Packet.type == 2048
+            )
+        ).all()
+        streams = {}
+        for packet in packets:
+            key = packet.ip_src
+            if key not in streams:
+                streams[key] = [packet]
+            else:
+                streams[key].append(packet)
+        return streams

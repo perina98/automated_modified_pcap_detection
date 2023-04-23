@@ -64,7 +64,6 @@ class Database():
         Returns:
             None
         '''
-
         # packet data structure
         pkt_data = {
             'protocol': None,
@@ -142,19 +141,36 @@ class Database():
                 
                 for i in range(pkt[DNS].ancount):
                     ans = pkt[DNS].an[i]
-                    rrname = ans.rrname
-                    rdata = ans.rdata
-                    ptype = ans.type
+                    try:
+                        rrname = ans.rrname
+                        rdata = ans.rdata
+                        ptype = ans.type
+                    except AttributeError:
+                        continue
                     if type(ans.rrname) is bytes:
                         rrname = ans.rrname.decode()
                     
                     if type(ans.rdata) is bytes:
                         rdata = ans.rdata.decode()
 
+                    if type(ans.rdata) is list:
+                        srdata = []
+                        for item in ans.rdata:
+                            if type(item) is bytes:
+                                srdata.append(item.decode())
+                            else:
+                                srdata.append(item)
+                        rdata = srdata
+
+
                     an.append({ 'rrname': rrname, 'rdata': rdata, 'type': ptype })
 
             dns_data['an'] = an
-            pkt_data['dns'] = json.dumps(dns_data)
+            
+            try:
+                pkt_data['dns'] = json.dumps(dns_data)
+            except:
+                pass
 
         try:
             pkt_data['type'] = pkt.type

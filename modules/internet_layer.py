@@ -12,6 +12,7 @@
 from scapy.all import *
 from database import Packet
 import modules.functions as functions
+from sqlalchemy import and_
 
 class InternetLayer():
     '''
@@ -33,7 +34,6 @@ class InternetLayer():
 
     def get_inconsistent_ttls(self):
         '''
-        POROVNAT IBA SYN PAKETY, IBA ZACIATOK SPOJENIA, mozno aj pre window
         Get number of inconsistent TTL values
         If the TTL value is different in the same communication, it is considered suspicious
         Args:
@@ -56,9 +56,9 @@ class InternetLayer():
                     stream_ttls[channels[stream][i].ttl] += 1
             
             if len(stream_ttls) > 2:
-                failed += len(channels[stream])
+                failed += 1
 
-        return failed
+        return failed, len(channels)
     
     def get_inconsistent_fragmentation(self):
         '''
@@ -69,9 +69,13 @@ class InternetLayer():
         Returns:
             int: number of packets with inconsistent fragmentation
         '''
-
-        packets = self.session.query(Packet).filter(Packet.id_pcap == self.id_pcap and Packet.ip_identification != 0 and Packet.ip_identification is not None).all()
-     
+        packets = self.session.query(Packet).filter(
+            and_(
+                Packet.id_pcap == self.id_pcap,
+                Packet.ip_identification != 0,
+                Packet.ip_identification.isnot(None)
+            )
+        ).all()
         ip_identifications_by_stream = {}
         channels = self.functions.get_communication_channels(packets, False)
         for stream in channels:
@@ -85,11 +89,33 @@ class InternetLayer():
        
         for stream in ip_identifications_by_stream:
             if len(ip_identifications_by_stream[stream]) == 1:
+                if ip_identifications_by_stream[stream][0].ip_flag == 0 and ip_identifications_by_stream[stream][0].ip_fragment_offset != 0:
+                    failed += 1
                 if ip_identifications_by_stream[stream][0].ip_flag == 1 or ip_identifications_by_stream[stream][0].ip_fragment_offset != 0:
                     failed += 1
             if len(ip_identifications_by_stream[stream]) > 1:
                 for i in range(len(ip_identifications_by_stream[stream])):
+                    if ip_identifications_by_stream[stream][i].ip_flag == 0 and ip_identifications_by_stream[stream][i].ip_fragment_offset == 0:
+                        continue
                     if (i != len(ip_identifications_by_stream[stream]) - 1 and ip_identifications_by_stream[stream][i].ip_flag != 1) or (i == 0 and ip_identifications_by_stream[stream][i].ip_fragment_offset != 0):
                         failed += 1
-                        break
-        return failed
+        return failed, len(ip_identifications_by_stream)
+
+    def get_sudden_ip_source_traffic_drop(self):
+        '''
+        Get number of packets with sudden drop for IP source traffic
+        Args:
+
+        Returns:
+            int: number of packets with sudden drop for IP source traffic
+        '''
+        streams_for_ip_source = self.functions.get_streams_for_ip_source()
+        failed = 0
+        gap = 0
+        for stream in streams_for_ip_source:
+            for i in range(len(streams_for_ip_source[stream]) - 1):
+                gap = streams_for_ip_source[stream][i+1].packet_timestamp - streams_for_ip_source[stream][i].packet_timestamp
+                if gap > 30:
+                    failed += 1
+                    break
+        return failed, len(streams_for_ip_source)

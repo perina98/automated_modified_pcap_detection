@@ -12,6 +12,7 @@
 from scapy.all import *
 from database import Packet
 import modules.functions as functions
+from sqlalchemy import and_, or_
 
 class ApplicationLayer():
     '''
@@ -40,7 +41,6 @@ class ApplicationLayer():
         Returns:
             int: number of packets with translation of unvisited domains
         '''
-
         packets = self.session.query(Packet).filter(Packet.id_pcap == self.id_pcap).all()
 
         all_ips = [pkt.ip_dst for pkt in packets]
@@ -58,7 +58,7 @@ class ApplicationLayer():
             if has_ip_answer and not valid_answer:
                 failed_count += 1
 
-        return failed_count
+        return failed_count, len(self.dns_pairs)
     
     def get_incomplete_ftp(self):
         '''
@@ -69,10 +69,17 @@ class ApplicationLayer():
         Returns:
             int: number of IP pairs with incomplete FTP
         '''
-
-        pkts = self.session.query(Packet).filter(Packet.id_pcap == self.id_pcap and 
-                                                (Packet.port_dst == 21 or Packet.port_src == 21 or Packet.port_dst == 20 or Packet.port_src == 20) 
-                                                ).all()
+        pkts = self.session.query(Packet).filter(
+            and_(
+                Packet.id_pcap == self.id_pcap,
+                or_(
+                    Packet.port_dst == 21,
+                    Packet.port_src == 21,
+                    Packet.port_dst == 20,
+                    Packet.port_src == 20
+                )
+            )
+        ).all()
 
         failed = 0
         pairs = {}
@@ -99,8 +106,7 @@ class ApplicationLayer():
             if pairs[pair]['ftp'] != pairs[pair]['ftp-data']:
                 failed += 1
 
-        return failed
-
+        return failed, len(pairs)
 
     def get_mismatched_dns_query_answer(self):
         '''
@@ -116,11 +122,8 @@ class ApplicationLayer():
             if self.dns_pairs[pair]['query']['qname'] != self.dns_pairs[pair]['answer_query']:
                 failed += 1
 
-        return failed
+        return failed, len(self.dns_pairs)
 
-
-        
-    
     def get_mismatched_dns_answer_stack(self):
         '''
         Check if there is any DNS packet with mismatched answer stack
@@ -146,7 +149,7 @@ class ApplicationLayer():
                         break
             failed += 1 if f else 0
 
-        return failed
+        return failed, len(self.dns_pairs)
 
     def get_missing_translation_of_visited_domain(self):
         '''
@@ -183,7 +186,7 @@ class ApplicationLayer():
                 if pkt.packet_timestamp < min(ip_addresses[pkt.ip_dst]):
                     failed += 1
 
-        return failed        
+        return failed, len(pkts)        
     
     def get_missing_dhcp_ips(self):
         '''
@@ -193,12 +196,11 @@ class ApplicationLayer():
         Returns:
             int: Number of packets with missing DHCP IPs
         '''
-
         # get all IPs from DHCP packets
-        dhcp_ips = self.functions.get_dhcp_ips(self.session.query(Packet).filter(Packet.id_pcap == self.id_pcap).all())
+        dhcp_ips = self.functions.get_dhcp_ips()
 
         # get all IPs from other packets
-        other_ips = self.functions.get_non_dhcp_ips(self.session.query(Packet).filter(Packet.id_pcap == self.id_pcap).all())
+        other_ips = self.functions.get_non_dhcp_ips()
 
         # check if all DHCP IPs are in other IPs
         failed = 0
@@ -206,7 +208,7 @@ class ApplicationLayer():
             if ip not in other_ips and ip != '0.0.0.0':
                 failed += 1
 
-        return failed
+        return failed, len(dhcp_ips)
     
     def get_missing_icmp_ips(self):
         '''
@@ -216,7 +218,6 @@ class ApplicationLayer():
         Returns:
             int: Number of packets with missing ICMP IPs
         '''
-
         # get all IPs from ICMP packets
         icmp_ips = self.functions.get_icmp_ips()
 
@@ -229,7 +230,7 @@ class ApplicationLayer():
             if ip not in other_ips and ip != '0.0.0.0':
                 failed += 1
 
-        return failed
+        return failed, len(icmp_ips)
     
     def get_inconsistent_user_agent(self):
         """
@@ -239,10 +240,12 @@ class ApplicationLayer():
         Returns:
             int: Number of packets with inconsistent user agent
         """
-
         channels = self.functions.get_communication_channels(self.session.query(Packet).filter(
-            Packet.id_pcap == self.id_pcap and Packet.user_agent is not None
-            ).all())
+            and_(
+                Packet.id_pcap == self.id_pcap,
+                Packet.user_agent.isnot(None)
+            )
+        ).all())
 
         failed = 0
 
@@ -254,4 +257,4 @@ class ApplicationLayer():
             if len(user_agents) > 1:
                 failed += 1
 
-        return failed
+        return failed, len(channels)

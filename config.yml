@@ -2,11 +2,11 @@ database:
   engine: sqlite
   file: db.db
 app:
-  chunk_size: 100
+  chunk_size: 2000
 tests:
-  pcap: false
-  misc: false
-  link_layer: false
-  internet_layer: false
-  transport_layer: false
+  pcap: true
+  misc: true
+  link_layer: true
+  internet_layer: true
+  transport_layer: true
   application_layer: true

@@ -64,7 +64,6 @@ class PcapData():
         
         return False
     
-
     def check_file_data_size(self, pcap_file_size, pcap_data_size):
         '''
         Check if the file size is smaller than data size

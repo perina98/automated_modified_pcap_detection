@@ -27,9 +27,8 @@ class LinkLayer():
         Returns:
             None
         '''
-        self.id_pcap = id_pcap
-        self.session = session
         self.functions =  functions.Functions(id_pcap, session)
+        self.packets = session.query(Packet).filter(Packet.id_pcap == id_pcap).all()
 
     def get_inconsistent_mac_maps(self):
         '''
@@ -45,7 +44,8 @@ class LinkLayer():
         for ip in macs:
             if len(set(macs[ip])) > 1:
                 failed += 1
-        return failed
+
+        return failed, len(macs)
     
     def get_missing_arp_traffic(self):
         '''
@@ -58,23 +58,24 @@ class LinkLayer():
         '''
         arp_macs = []
         ip_macs = []
-        pkts = self.session.query(Packet).filter(Packet.id_pcap == self.id_pcap).all()
 
-        for pkt in pkts:
-            if pkt.type == 2054:
+        for packet in self.packets:
+            if packet.type == 2054:
                 # ARP packet type, save MAC addresses
-                arp_macs.append(pkt.eth_src)
-                arp_macs.append(pkt.eth_dst)
-            if pkt.type == 2048:
-                ip_macs.append({'src': pkt.eth_src, 'dst': pkt.eth_dst})
+                arp_macs.append(packet.eth_src)
+                arp_macs.append(packet.eth_dst)
+            if packet.type == 2048:
+                ip_macs.append(packet.eth_src)
+                ip_macs.append(packet.eth_dst)
                 
         failed_macs = 0
         arp_set = set(arp_macs)
-        for mac in ip_macs:
-            if mac['src'] not in arp_set and mac['dst'] not in arp_set:
+        ip_set = set(arp_macs)
+        for mac in ip_set:
+            if mac not in arp_set:
                 failed_macs += 1
         
-        return failed_macs
+        return failed_macs, len(ip_set)
     
     def get_lost_traffic_by_arp(self):
         '''
@@ -86,15 +87,14 @@ class LinkLayer():
         '''
         arp_macs = []
         ip_macs = []
-        pkts = self.session.query(Packet).filter(Packet.id_pcap == self.id_pcap).all()
 
-        for pkt in pkts:
-            if pkt.type == 2054:
-                arp_macs.append(pkt.eth_src)
-                arp_macs.append(pkt.eth_dst)
-            if pkt.type == 2048:
-                ip_macs.append(pkt.eth_src)
-                ip_macs.append(pkt.eth_dst)
+        for packet in self.packets:
+            if packet.type == 2054:
+                arp_macs.append(packet.eth_src)
+                arp_macs.append(packet.eth_dst)
+            if packet.type == 2048:
+                ip_macs.append(packet.eth_src)
+                ip_macs.append(packet.eth_dst)
                 
         failed_macs = 0
         arp_set = set(arp_macs)
@@ -103,7 +103,7 @@ class LinkLayer():
             if mac not in ip_macs_set:
                 failed_macs += 1
 
-        return failed_macs
+        return failed_macs, len(arp_set)
     
     def get_missing_arp_responses(self):
         '''
@@ -115,18 +115,19 @@ class LinkLayer():
         '''
         arp_requests = []
         arp_responses = []
-        pkts = self.session.query(Packet).filter(Packet.id_pcap == self.id_pcap).all()
 
-        for pkt in pkts:
-            if pkt.type == 2054:
-                if pkt.arp_op == 1:
-                    arp_requests.append(pkt.arp_ip_dst)
-                if pkt.arp_op == 2:
-                    arp_responses.append(pkt.arp_ip_src)
+        for packet in self.packets:
+            if packet.type == 2054:
+                if packet.arp_op == 1:
+                    arp_requests.append(packet.arp_ip_dst)
+                if packet.arp_op == 2:
+                    arp_responses.append(packet.arp_ip_src)
                 
         failed_macs = 0
-        for ip in arp_requests:
-            if ip not in arp_responses:
+        requests_set = set(arp_requests)
+        responses_set = set(arp_responses)
+        for ip in requests_set:
+            if ip not in responses_set:
                 failed_macs += 1
 
-        return failed_macs
+        return failed_macs, len(requests_set)

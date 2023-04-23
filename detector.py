@@ -68,6 +68,7 @@ class Detector():
         if self.args.dataset_dir:
             pcaps = self.get_dataset_pcaps()
             for pcap in pcaps:
+                self.log.debug("Processing pcap: " + pcap)
                 id_pcap = self.db.save_pcap(session, pcap)
                 self.check_pcap(pcap, id_pcap)
             exit(0)
@@ -230,7 +231,9 @@ class Detector():
             packet = save_queue.get()
             if packet is None:
                 save_queue.task_done()
-                self.save_packets(packet_chunk, id_pcap)
+                if len(packet_chunk) > 0:
+                    self.log.debug("Saving packets of chunk size " + str(len(packet_chunk)))
+                    self.save_packets(packet_chunk, id_pcap)
                 break
 
             save_queue.task_done()
@@ -254,7 +257,6 @@ class Detector():
         Returns:
             None
         '''
-
         # Create queues and processes
         in_queue = multiprocessing.JoinableQueue()
         save_queue = multiprocessing.JoinableQueue()
@@ -308,35 +310,41 @@ class Detector():
         pcap_file_size = capinfos['File size']
         pcap_data_size = capinfos['Data size']
 
+        pcap_modifications = {
+            'snaplen_context': False,
+            'file_and_data_size': False,
+        }
+
         packet_modifications = {
             'mismatched_checksums': 0,
             'mismatched_protocols': 0,
             'incorrect_packet_length': 0,
-            'missing_arp_traffic': 0,
-            'inconsistent_mac_maps': 0,
-            'inconsistent_interpacket_gaps': 0,
-            'mismatched_dns_query_answer': 0,
-            'mismatched_dns_answer_stack': 0,
-            'missing_translation_of_visited_domain': 0,
-            'translation_of_unvisited_domains': 0,
-            'incomplete_ftp': 0,
             'invalid_packet_payload': 0,
-            'missing_arp_responses': 0,
             'insuficient_capture_length': 0,
-            'inconsistent_ttls': 0,
-            'inconsistent_mss': 0,
-            'inconsistent_window_size': 0,
-            'mismatched_ciphers': 0,
-            'incomplete_tcp_streams': 0,
-            'missing_dhcp_ips': 0,
-            'missing_icmp_ips': 0,
-            'inconsistent_user_agent': 0,
-            'inconsistent_fragmentation': 0,
-        }
 
-        pcap_modifications = {
-            'snaplen_context': False,
-            'file_and_data_size': False,
+            'missing_arp_traffic': {'failed': 0, 'total': 0},
+            'inconsistent_mac_maps': {'failed': 0, 'total': 0},
+            'lost_arp_traffic': {'failed': 0, 'total': 0},
+            'missing_arp_responses': {'failed': 0, 'total': 0},
+
+            'inconsistent_ttls': {'failed': 0, 'total': 0},
+            'inconsistent_fragmentation': {'failed': 0, 'total': 0},
+            'sudden_drops_for_ip_source': {'failed': 0, 'total': 0},
+
+            'inconsistent_interpacket_gaps': {'failed': 0, 'total': 0},
+            'inconsistent_mss': {'failed': 0, 'total': 0},
+            'inconsistent_window_size': {'failed': 0, 'total': 0},
+            'mismatched_ciphers': {'failed': 0, 'total': 0},
+            'incomplete_tcp_streams': {'failed': 0, 'total': 0},
+
+            'mismatched_dns_query_answer': {'failed': 0, 'total': 0},
+            'mismatched_dns_answer_stack': {'failed': 0, 'total': 0},
+            'missing_translation_of_visited_domain': {'failed': 0, 'total': 0},
+            'translation_of_unvisited_domains': {'failed': 0, 'total': 0},
+            'incomplete_ftp': {'failed': 0, 'total': 0},
+            'missing_dhcp_ips': {'failed': 0, 'total': 0},
+            'missing_icmp_ips': {'failed': 0, 'total': 0},
+            'inconsistent_user_agent': {'failed': 0, 'total': 0},
         }
 
         manager = multiprocessing.Manager()
@@ -363,38 +371,38 @@ class Detector():
         if self.config['tests']['link_layer']:
             self.log.debug("Running link layer tests")
             link_layer_mod = link_layer.LinkLayer(id_pcap, session)
-            packet_modifications["missing_arp_traffic"] = link_layer_mod.get_missing_arp_traffic()
-            packet_modifications["inconsistent_mac_maps"] = link_layer_mod.get_inconsistent_mac_maps()
-            packet_modifications["lost_arp_traffic"] = link_layer_mod.get_lost_traffic_by_arp()
-            packet_modifications["missing_arp_responses"] = link_layer_mod.get_missing_arp_responses()
+            packet_modifications["missing_arp_traffic"]['failed'], packet_modifications["missing_arp_traffic"]['total'] = link_layer_mod.get_missing_arp_traffic()
+            packet_modifications["inconsistent_mac_maps"]['failed'], packet_modifications["inconsistent_mac_maps"]['total'] = link_layer_mod.get_inconsistent_mac_maps()
+            packet_modifications["lost_arp_traffic"]['failed'], packet_modifications["lost_arp_traffic"]['total'] = link_layer_mod.get_lost_traffic_by_arp()
+            packet_modifications["missing_arp_responses"]['failed'], packet_modifications["missing_arp_responses"]['total'] = link_layer_mod.get_missing_arp_responses()
 
         if self.config['tests']['internet_layer']:
             self.log.debug("Running internet layer tests")
             internet_layer_mod = internet_layer.InternetLayer(id_pcap, session)
-            packet_modifications["inconsistent_ttls"] = internet_layer_mod.get_inconsistent_ttls()
-            packet_modifications["inconsistent_fragmentation"] = internet_layer_mod.get_inconsistent_fragmentation()
+            packet_modifications["inconsistent_ttls"]['failed'], packet_modifications["inconsistent_ttls"]['total'] = internet_layer_mod.get_inconsistent_ttls()
+            packet_modifications["inconsistent_fragmentation"]['failed'], packet_modifications["inconsistent_fragmentation"]['total'] = internet_layer_mod.get_inconsistent_fragmentation()
+            packet_modifications["sudden_drops_for_ip_source"]['failed'], packet_modifications["sudden_drops_for_ip_source"]['total'] = internet_layer_mod.get_sudden_ip_source_traffic_drop()
 
         if self.config['tests']['transport_layer']:
             self.log.debug("Running transport layer tests")
             transport_layer_mod = transport_layer.TransportLayer(id_pcap, session)
-            packet_modifications["inconsistent_interpacket_gaps"] = transport_layer_mod.get_inconsistent_interpacket_gaps()
-            packet_modifications["inconsistent_mss"] = transport_layer_mod.get_inconsistent_mss()
-            # packet_modifications["inconsistent_window_size"] = transport_layer_mod.get_inconsistent_window()
-            packet_modifications["mismatched_ciphers"] = transport_layer_mod.get_mismatched_ciphers()
-            packet_modifications["incomplete_tcp_streams"] = transport_layer_mod.get_incomplete_tcp_streams()
+            packet_modifications["inconsistent_interpacket_gaps"]['failed'], packet_modifications["inconsistent_interpacket_gaps"]['total'] = transport_layer_mod.get_inconsistent_interpacket_gaps()
+            packet_modifications["inconsistent_mss"]['failed'], packet_modifications["inconsistent_mss"]['total'] = transport_layer_mod.get_inconsistent_mss()
+            packet_modifications["inconsistent_window_size"]['failed'], packet_modifications["inconsistent_window_size"]['total'] = transport_layer_mod.get_inconsistent_window()
+            packet_modifications["mismatched_ciphers"]['failed'], packet_modifications["mismatched_ciphers"]['total'] = transport_layer_mod.get_mismatched_ciphers()
+            #packet_modifications["incomplete_tcp_streams"]['failed'], packet_modifications["incomplete_tcp_streams"]['total'] = transport_layer_mod.get_incomplete_tcp_streams()
 
         if self.config['tests']['application_layer']:
-            self.log.debug("Running app layer tests")
+            self.log.debug("Running application layer tests")
             application_layer_mod = application_layer.ApplicationLayer(id_pcap, session)
-            packet_modifications["mismatched_dns_query_answer"] = application_layer_mod.get_mismatched_dns_query_answer()
-            packet_modifications["mismatched_dns_answer_stack"] = application_layer_mod.get_mismatched_dns_answer_stack()
-            packet_modifications["missing_translation_of_visited_domain"] = application_layer_mod.get_missing_translation_of_visited_domain()
-            packet_modifications["translation_of_unvisited_domains"] = application_layer_mod.get_translation_of_unvisited_domains()
-            packet_modifications["incomplete_ftp"] = application_layer_mod.get_incomplete_ftp()
-            packet_modifications["missing_dhcp_ips"] = application_layer_mod.get_missing_dhcp_ips()
-            packet_modifications["missing_icmp_ips"] = application_layer_mod.get_missing_icmp_ips()
-            packet_modifications["inconsistent_user_agent"] = application_layer_mod.get_inconsistent_user_agent()
-
+            packet_modifications["mismatched_dns_query_answer"]['failed'], packet_modifications["mismatched_dns_query_answer"]['total'] = application_layer_mod.get_mismatched_dns_query_answer()
+            packet_modifications["mismatched_dns_answer_stack"]['failed'], packet_modifications["mismatched_dns_answer_stack"]['total'] = application_layer_mod.get_mismatched_dns_answer_stack()
+            packet_modifications["missing_translation_of_visited_domain"]['failed'], packet_modifications["missing_translation_of_visited_domain"]['total'] = application_layer_mod.get_missing_translation_of_visited_domain()
+            packet_modifications["translation_of_unvisited_domains"]['failed'], packet_modifications["translation_of_unvisited_domains"]['total'] = application_layer_mod.get_translation_of_unvisited_domains()
+            packet_modifications["incomplete_ftp"]['failed'], packet_modifications["incomplete_ftp"]['total'] = application_layer_mod.get_incomplete_ftp()
+            packet_modifications["missing_dhcp_ips"]['failed'], packet_modifications["missing_dhcp_ips"]['total'] = application_layer_mod.get_missing_dhcp_ips()
+            packet_modifications["missing_icmp_ips"]['failed'], packet_modifications["missing_icmp_ips"]['total'] = application_layer_mod.get_missing_icmp_ips()
+            packet_modifications["inconsistent_user_agent"]['failed'], packet_modifications["inconsistent_user_agent"]['total'] = application_layer_mod.get_inconsistent_user_agent()
 
         self.print_results(pcap_path, packet_count, pcap_modifications, packet_modifications)
 
@@ -426,4 +434,7 @@ class Detector():
 
         print("Packet modifications:")
         for key in packet_keys:
-            print (pcap_path," packet_modifications['"+key+"'] = ", str(packet_modifications[key]) + "/" + str(packet_count))
+            if type(packet_modifications[key]) is dict:
+                print (pcap_path," packet_modifications['"+key+"'] = ", str(packet_modifications[key]['failed']) + "/" + str(packet_modifications[key]['total']))
+            else:
+                print (pcap_path," packet_modifications['"+key+"'] = ", str(packet_modifications[key]) + "/" + str(packet_count))

@@ -13,7 +13,7 @@ dataset : clean
 run_dataset :
 	$(PYTHON) main.py -c config.yml --dataset dataset -l debug
 single :
-	$(PYTHON) main.py -c config.yml --input_pcap input.pcap -l debug
+	$(PYTHON) main.py -c config.yml --input_pcap ignore/home.pcap -l debug
 clean :
 ifeq ($(OS),Windows_NT)
 	@if exist dataset rmdir /s /q dataset

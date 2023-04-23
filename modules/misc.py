@@ -50,7 +50,7 @@ class Miscellaneous():
                     return True
         return False
 
-    def check_checksum(self,packet):
+    def check_checksum(self, packet):
         '''
         Check if the checksum is correct for TCP, UDP, IP and ICMP
         Args:
@@ -59,7 +59,6 @@ class Miscellaneous():
         Returns:
             bool: True if at least one checksum is incorrect, False otherwise
         '''
-        modified = False
         original_checksums = {
             "TCP": None,
             "UDP": None,
@@ -88,11 +87,11 @@ class Miscellaneous():
 
         if (original_checksums["TCP"] != None and original_checksums["TCP"] != packet[TCP].chksum) or \
             (original_checksums["UDP"] != None and original_checksums["UDP"] != packet[UDP].chksum) or \
-            (original_checksums["IP"] != None and original_checksums["IP"] != packet[IP].chksum) or \
+            (original_checksums["IP"] != None and original_checksums["IP"] != 0 and original_checksums["IP"] != packet[IP].chksum) or \
             (original_checksums["ICMP"] != None and original_checksums["ICMP"] != packet[ICMP].chksum):    
-            modified = True
+            return True
 
-        return modified
+        return False
 
     def check_packet_length(self, packet):
         '''
@@ -103,7 +102,6 @@ class Miscellaneous():
         Returns:
             bool: True if the packet length is incorrect False otherwise
         '''
-
         length = len(packet)
 
         # Ethernet header
@@ -118,6 +116,10 @@ class Miscellaneous():
             
             # IP header
             length -= packet[IP].ihl * 4
+        
+        if packet.haslayer(IPv6):
+            # IPv6 header
+            length -= 40
 
         if packet.haslayer(UDP):
             if length != packet[UDP].len:
@@ -174,8 +176,8 @@ class Miscellaneous():
         Returns:
             bool: True if the packet was truncated, False otherwise
         '''
-        if hasattr(packet, 'len'):
-            if packet.len != len(packet):
+        if hasattr(packet, 'wirelen'):
+            if packet.wirelen != len(packet):
                 return True
         else:
             return True
