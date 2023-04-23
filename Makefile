@@ -1,24 +1,24 @@
 PYTHON := python
+ZIPNAME := 527341
 
-.PHONY: all dataset run_dataset single
+.PHONY: all dataset run_dataset single clean install zip
 
 all : 
 	@$(MAKE) -s dataset
 	@$(MAKE) -s run_dataset
 
-dataset : clean
-	mkdir dataset
-	mkdir -p dataset
+dataset :
 	$(PYTHON) makedataset.py
 run_dataset :
 	$(PYTHON) main.py -c config.yml --dataset dataset -l debug
 single :
-	$(PYTHON) main.py -c config.yml --input_pcap ignore/home.pcap -l debug
+	$(PYTHON) main.py -c config.yml --input_pcap static/input.pcap -l debug
 clean :
-ifeq ($(OS),Windows_NT)
-	@if exist dataset rmdir /s /q dataset
-else
 	rm -rf dataset
-endif
+	rm -rf *.db
+	rm -rf *.zip
+	find . -name '__pycache__' -exec rm -r {} +
 install :
 	pip install -r requirements.txt
+pack: clean
+	zip -r $(ZIPNAME).zip . --exclude=".git/*" --exclude="ignore/*" --exclude="./TODO"

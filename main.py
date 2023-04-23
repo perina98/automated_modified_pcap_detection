@@ -15,7 +15,7 @@
 import argparse 
 import yaml
 
-from detector import Detector
+from src.detector import Detector
 
 def get_args():
     '''

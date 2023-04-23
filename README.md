@@ -1,6 +1,6 @@
 # Detector 
 
-Detector is a python script with custom modules designed to detect changes made to pcap files for forensic analysis and identification of malicious activities.
+Detector is a python script with custom modules designed to detect changes made to pcap files and packets themselves for forensic analysis and identification of malicious activities.
 
 This script offers a range of modules that can be seletively enabled or disabled. These modules have been developed to detect various types of suspicious activity such as packet modification, injection and more. 
 
@@ -43,7 +43,7 @@ Before running the app, check config.yml file and set your preferences there.
 It is possible to set different name for database file, packet save chunk size and which tests to run.
 
 ```bash
-python main.py --config config.yml --input_pcap input.pcap
+python main.py --config config.yml --input_pcap static/input.pcap
 ```
 
 ## Options
@@ -57,4 +57,4 @@ python main.py --config config.yml --input_pcap input.pcap
 
 ## License
 
-[MIT](https://choosealicense.com/licenses/mit/)
+License is provided in the LICENSE.md file.
