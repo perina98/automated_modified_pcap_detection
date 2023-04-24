@@ -8,7 +8,7 @@ all :
 	@$(MAKE) -s run_dataset
 
 dataset :
-	$(PYTHON) makedataset.py
+	$(PYTHON) src/createdataset.py
 run_dataset :
 	$(PYTHON) main.py -c config.yml --dataset dataset -l debug
 single :

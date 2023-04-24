@@ -1,3 +1,6 @@
+#! /usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 import os
 import subprocess
 import copy
@@ -6,20 +9,20 @@ logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
 from scapy.all import *
 from scapy.layers.tls import *
 
-INFILE = 'input.pcap'
-OUTDIR = 'dataset'
+INFILE = 'static/input.pcap'
+DATASET_DIR = 'dataset'
 PREFIX = 'pcap_output_'
 
 def make_dataset_tcprewrite():
     print('Creating tcprewrite dataset')
     #1 change ip address
-    subprocess.run(['tcprewrite', '--pnat=10.3.4.42:10.152.1.200', '--infile=./'+INFILE, '--outfile='+OUTDIR+'/'+PREFIX+'01.pcap'])
+    subprocess.run(['tcprewrite', '--pnat=10.3.4.42:10.152.1.200', '--infile=./'+INFILE, '--outfile='+DATASET_DIR+'/'+PREFIX+'01.pcap'])
 
     #2 change ports
-    subprocess.run(['tcprewrite', '--portmap=80:8080,22:8022', '--fixcsum' , '--infile=./'+INFILE, '--outfile='+OUTDIR+'/'+PREFIX+'02.pcap'])
+    subprocess.run(['tcprewrite', '--portmap=80:8080,22:8022', '--fixcsum' , '--infile=./'+INFILE, '--outfile='+DATASET_DIR+'/'+PREFIX+'02.pcap'])
 
     #3 change ip address and ports
-    subprocess.run(['tcprewrite', '--pnat=10.2.2.27:10.3.8.88', '--portmap=22:10222,443:60123', '--fixcsum' , '--infile=./'+INFILE, '--outfile='+OUTDIR+'/'+PREFIX+'03.pcap'])
+    subprocess.run(['tcprewrite', '--pnat=10.2.2.27:10.3.8.88', '--portmap=22:10222,443:60123', '--fixcsum' , '--infile=./'+INFILE, '--outfile='+DATASET_DIR+'/'+PREFIX+'03.pcap'])
 
 def make_dataset_scapy(pkts):
     print('Creating scapy dataset')
@@ -32,7 +35,7 @@ def make_dataset_scapy(pkts):
             if pkt[DNS].qd:
                 pkt[DNS].qd.qname = 'www.example.com'
     
-    wrpcap(OUTDIR+'/'+PREFIX+'04.pcap', pkts)
+    wrpcap(DATASET_DIR+'/'+PREFIX+'04.pcap', pkts)
     pkts = copy.deepcopy(orig)
 
     #5 change dns domain in dns query for specific address
@@ -42,7 +45,7 @@ def make_dataset_scapy(pkts):
                 if pkt[DNS].qd.qname == 'onecollector.cloudapp.aria.akadns.net':
                     pkt[DNS].qd.qname = 'example.com'
     
-    wrpcap(OUTDIR+'/'+PREFIX+'05.pcap', pkts)
+    wrpcap(DATASET_DIR+'/'+PREFIX+'05.pcap', pkts)
     pkts = copy.deepcopy(orig)
 
     #6 change payload in http request
@@ -52,7 +55,7 @@ def make_dataset_scapy(pkts):
                 payload = pkt.lastlayer()
                 payload.original = re.sub(r'\s\d|\S*\.com', 'example.com', str(payload.original))
     
-    wrpcap(OUTDIR+'/'+PREFIX+'06.pcap', pkts)
+    wrpcap(DATASET_DIR+'/'+PREFIX+'06.pcap', pkts)
     pkts = copy.deepcopy(orig)
 
     #7 change payload in request and change ip address
@@ -65,7 +68,7 @@ def make_dataset_scapy(pkts):
             if pkt[IP].src == '10.3.4.42':
                 pkt[IP].src = '1.1.1.1'
         
-    wrpcap(OUTDIR+'/'+PREFIX+'07.pcap', pkts)
+    wrpcap(DATASET_DIR+'/'+PREFIX+'07.pcap', pkts)
     pkts = copy.deepcopy(orig)
 
     #8 change tls message
@@ -76,7 +79,7 @@ def make_dataset_scapy(pkts):
                     if pkt[TLS].type == 23:
                         pkt[TLS].msg = b'example.com'
 
-    wrpcap(OUTDIR+'/'+PREFIX+'08.pcap', pkts)
+    wrpcap(DATASET_DIR+'/'+PREFIX+'08.pcap', pkts)
     pkts = copy.deepcopy(orig)
 
     #9 change source mac address only for source ip address 10.2.2.27
@@ -85,7 +88,7 @@ def make_dataset_scapy(pkts):
             if pkt[IP].src == '10.2.2.27':
                 pkt.src = '00:00:00:00:00:01'
         
-    wrpcap(OUTDIR+'/'+PREFIX+'09.pcap', pkts)
+    wrpcap(DATASET_DIR+'/'+PREFIX+'09.pcap', pkts)
     pkts = copy.deepcopy(orig)
 
     #10 change dest mac address only for dest ip address 4.122.55.7
@@ -94,7 +97,7 @@ def make_dataset_scapy(pkts):
             if pkt[IP].dst == '4.122.55.7':
                 pkt.dst = '00:00:00:00:00:02'
             
-    wrpcap(OUTDIR+'/'+PREFIX+'10.pcap', pkts)
+    wrpcap(DATASET_DIR+'/'+PREFIX+'10.pcap', pkts)
     pkts = copy.deepcopy(orig)
 
     #11 change protocol to udp for source ip address 10.2.2.27
@@ -103,7 +106,7 @@ def make_dataset_scapy(pkts):
             if pkt[IP].src == '10.2.2.27':
                 pkt[IP].proto = 17
 
-    wrpcap(OUTDIR+'/'+PREFIX+'11.pcap', pkts)
+    wrpcap(DATASET_DIR+'/'+PREFIX+'11.pcap', pkts)
     pkts = copy.deepcopy(orig)
 
     #12 remove payload for source ip address 10.2.2.27
@@ -112,7 +115,7 @@ def make_dataset_scapy(pkts):
             if pkt[IP].src == '10.2.2.27':
                 pkt.remove_payload()
 
-    wrpcap(OUTDIR+'/'+PREFIX+'12.pcap', pkts)
+    wrpcap(DATASET_DIR+'/'+PREFIX+'12.pcap', pkts)
 
     #13 change dns answer in dns response
     for pkt in pkts:
@@ -122,7 +125,7 @@ def make_dataset_scapy(pkts):
                     if pkt[IP].src == '4.122.55.3':
                         pkt[DNS].an = b'1.1.1.1'
             
-    wrpcap(OUTDIR+'/'+PREFIX+'13.pcap', pkts)
+    wrpcap(DATASET_DIR+'/'+PREFIX+'13.pcap', pkts)
 
     #14 change tls message type
     for pkt in pkts:
@@ -132,7 +135,7 @@ def make_dataset_scapy(pkts):
                     if pkt[TLS].type == 23:
                         pkt[TLS].type = 22
 
-    wrpcap(OUTDIR+'/'+PREFIX+'14.pcap', pkts)
+    wrpcap(DATASET_DIR+'/'+PREFIX+'14.pcap', pkts)
     pkts = copy.deepcopy(orig)
 
     #15 change tls message len
@@ -143,7 +146,7 @@ def make_dataset_scapy(pkts):
                     if pkt[TLS].type == 23:
                         pkt[TLS].len = 100
 
-    wrpcap(OUTDIR+'/'+PREFIX+'15.pcap', pkts)
+    wrpcap(DATASET_DIR+'/'+PREFIX+'15.pcap', pkts)
     pkts = copy.deepcopy(orig)
 
 
@@ -164,7 +167,7 @@ def make_dataset_multi(pkts):
                 if pkt.haslayer(TCP):
                     pkt[TCP].sport = 10223
 
-    wrpcap(OUTDIR+'/'+PREFIX+'16.pcap', pkts)
+    wrpcap(DATASET_DIR+'/'+PREFIX+'16.pcap', pkts)
     pkts = copy.deepcopy(orig)
 
     #17 change protocol to udp
@@ -174,7 +177,7 @@ def make_dataset_multi(pkts):
                 pkt[IP].src = '1.1.1.1'
                 pkt[IP].proto = 17
         
-    wrpcap(OUTDIR+'/'+PREFIX+'17.pcap', pkts)
+    wrpcap(DATASET_DIR+'/'+PREFIX+'17.pcap', pkts)
     pkts = copy.deepcopy(orig)
 
     #18 change protocol to icmp if it is dhcp, and change its source mac address and ip address
@@ -185,7 +188,7 @@ def make_dataset_multi(pkts):
                 pkt.src = '00:00:00:00:00:01'
                 pkt[IP].src = '1.1.1.1'
     
-    wrpcap(OUTDIR+'/'+PREFIX+'18.pcap', pkts)
+    wrpcap(DATASET_DIR+'/'+PREFIX+'18.pcap', pkts)
 
 def make_dataset_scapy_ext(pkts):
     print('Creating scapy_ext dataset')
@@ -202,7 +205,7 @@ def make_dataset_scapy_ext(pkts):
                 pkt[IP].src = '4.122.55.199'
                 pkt[IP].dst = '4.122.55.198'
     
-    wrpcap(OUTDIR+'/'+PREFIX+'19.pcap', pkts)
+    wrpcap(DATASET_DIR+'/'+PREFIX+'19.pcap', pkts)
     pkts = copy.deepcopy(orig)
 
     #20 change IP address so that it comes before DNS answer
@@ -211,7 +214,7 @@ def make_dataset_scapy_ext(pkts):
             if pkt[IP].dst == '157.55.134.142':
                 pkt[IP].dst = '104.96.141.107'
 
-    wrpcap(OUTDIR+'/'+PREFIX+'20.pcap', pkts)
+    wrpcap(DATASET_DIR+'/'+PREFIX+'20.pcap', pkts)
     pkts = copy.deepcopy(orig)
 
 
@@ -223,13 +226,13 @@ def ensure_dir():
 
     Returns:
     '''
-    if os.path.isdir(OUTDIR):
-        print('Output directory already exists: '+OUTDIR)
+    if os.path.isdir(DATASET_DIR):
+        print('Output directory already exists: '+DATASET_DIR)
         print('Purging all files in output directory')
-        subprocess.run(['rm -f '+OUTDIR+'/*'], shell=True)
+        subprocess.run(['rm -f '+DATASET_DIR+'/*'], shell=True)
     else:
-        print('Creating directory: '+OUTDIR)
-        subprocess.run(['mkdir -p '+OUTDIR], shell=True)
+        print('Creating directory: '+DATASET_DIR)
+        subprocess.run(['mkdir -p '+DATASET_DIR], shell=True)
 
 def ensure_file():
     '''
@@ -240,8 +243,28 @@ def ensure_file():
     '''
     print('Checking for input file: '+INFILE)
     if not os.path.isfile(INFILE):
-        print('Input file input.pcap does not exist in current directory')
+        print('Input file input.pcap does not exist in the static directory')
         exit(1)
+
+def adjust_paths():
+    '''
+    Adjust paths if script is run from the static directory
+    Args:
+
+    Returns:
+    '''
+    global INFILE
+    global DATASET_DIR
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+
+    # get the current working directory
+    cwd = os.getcwd()
+
+    # compare the two directories
+    if script_dir == cwd:
+        print("The current directory is the same as the script directory. Adjusting paths accordingly.")
+        INFILE = '../'+INFILE
+        DATASET_DIR = '../'+DATASET_DIR
 
 def run_all():
     '''
@@ -250,7 +273,10 @@ def run_all():
 
     Returns:
     '''
+    print("Loading input file: "+INFILE)
     pkts = rdpcap(INFILE)
+
+    print("Creating datasets from input file")
     make_dataset_tcprewrite()
     orig = copy.deepcopy(pkts)
     make_dataset_scapy(pkts)
@@ -260,6 +286,7 @@ def run_all():
     make_dataset_scapy_ext(pkts)
 
 if __name__ == '__main__':
+    adjust_paths()
     ensure_file()
     ensure_dir()
     load_layer('tls')
