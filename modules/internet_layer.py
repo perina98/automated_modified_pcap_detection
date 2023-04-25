@@ -18,7 +18,7 @@ class InternetLayer():
     '''
     Class for checking internet layer for any inconsistencies
     '''
-    def __init__(self, id_pcap, session):
+    def __init__(self, config, id_pcap, session):
         '''
         Constructor
         Args:
@@ -30,6 +30,7 @@ class InternetLayer():
         '''
         self.id_pcap = id_pcap
         self.session = session
+        self.config = config
         self.functions =  functions.Functions(id_pcap, session)
 
     def get_inconsistent_ttls(self):
@@ -55,6 +56,8 @@ class InternetLayer():
                 else:
                     stream_ttls[channels[stream][i].ttl] += 1
             
+            # allowed number of different TTL values is set to 2, can be discussed and changed
+            # generally, ttls should be the same for the same communication
             if len(stream_ttls) > 2:
                 failed += 1
 
@@ -115,7 +118,8 @@ class InternetLayer():
         for stream in streams_for_ip_source:
             for i in range(len(streams_for_ip_source[stream]) - 1):
                 gap = streams_for_ip_source[stream][i+1].packet_timestamp - streams_for_ip_source[stream][i].packet_timestamp
-                if gap > 30:
+
+                if gap > self.config['app']['allowed_communication_silence']:
                     failed += 1
                     break
         return failed, len(streams_for_ip_source)

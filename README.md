@@ -37,19 +37,75 @@ Alternatively, you can just run this command that will install the requirements.
 make install
 ```
 
+## Generating dataset
+
+In order to generate dataset, you need to run
+```bash
+python src/createdataset.py
+```
+
+or just 
+
+```bash
+make dataset
+```
+
+which will generate dataset files in /dataset folder which will be created if it does not exist yet.
+Default file used for creating the dataset is static/input.pcap. You can edit this in the src/createdataset.py script.
+
+After each file is created, information about this file and its modifications are printed on STDOUT.
+
+## Config file
+
+Config file is crucial for running the application. If no -c or --config options are specified, config.yml is used. If file does not exists, program ends.
+
+Config consists of 3 main root keys:
+
+database, app, tests
+
+database contains 2 subkeys
+```
+engine - database engine, only sqlite was tested
+file   - filename for database that will be created in the current folder
+```
+
+app consists of 6 subkeys
+```
+chunk_size                      - (int) number of packets to be processed in one chunk (required)
+check_last_bytes                - (int) check last x bytes of the file (required)
+allowed_communication_silence   - (int) communication silence in seconds (required)
+allowed_latency_inconsistency   - (int / float) latency should not be more than x times different (required)
+workers                         - (int / null) number of workers, leave it empty to use all available cores
+custom_private_network          - (ipv4/ipv6 network / null) if you want to add your own private network (e.g. 10.0.0.0/8), leave it empty otherwise
+```
+
+tests consist of 6 subkeys representing each test module
+```
+pcap                - (bool) Turns on or off pcap tests
+misc                - (bool) Turns on or off misc tests
+link_layer          - (bool) Turns on or off link_layer tests
+internet_layer      - (bool) Turns on or off internet_layer tests
+transport_layer     - (bool) Turns on or off transport_layer tests
+application_layer   - (bool) Turns on or off application_layer tests
+```
+
 ## Usage
 
 Before running the app, check config.yml file and set your preferences there.
 It is possible to set different name for database file, packet save chunk size and which tests to run.
 
 ```bash
-python main.py --config config.yml --input_pcap static/input.pcap
+python main.py --input_pcap static/input.pcap
 ```
+
+## Example output
+
+TODO
 
 ## Options
 
 ```
--c, --config           Config file, required option
+-c, --config           Config file, default is config.yml
 -i, --input_pcap       Input PCAP file path
 -d, --dataset_dir      Dataset directory path
 -l, --log              Log level
@@ -57,4 +113,4 @@ python main.py --config config.yml --input_pcap static/input.pcap
 
 ## License
 
-License is provided in the LICENSE.md file.
+[MIT](https://choosealicense.com/licenses/mit/)

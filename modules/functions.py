@@ -19,7 +19,7 @@ class Functions():
     '''
     Class that provides functions for other modules
     '''
-    def __init__(self, id_pcap = None, session = None):
+    def __init__(self, id_pcap = None, session = None, config = None):
         '''
         Constructor
         Args:
@@ -31,6 +31,7 @@ class Functions():
         '''
         self.id_pcap = id_pcap
         self.session = session
+        self.config = config
 
     def is_private_ip(self, ip_addr):
         '''
@@ -54,6 +55,14 @@ class Functions():
                 ipaddress.IPv4Network('172.16.0.0/12'),
                 ipaddress.IPv4Network('192.168.0.0/16')
             ]
+
+            if self.config is not None and self.config['app']['custom_private_network'] is not None:
+                try:
+                    ipaddress.IPv4Network(self.config['app']['custom_private_network'])
+                    private_ipv4_ranges.append(ipaddress.IPv4Network(self.config['app']['custom_private_network']))
+                except ValueError:
+                    pass
+
             for private_range in private_ipv4_ranges:
                 if ipaddress.IPv4Address(ip_addr) in private_range:
                     return True
@@ -63,6 +72,14 @@ class Functions():
                 ipaddress.IPv6Network('fd00::/8'),
                 ipaddress.IPv6Network('::/10')
             ]
+            
+            if self.config is not None and self.config['app']['custom_private_network'] is not None:
+                try:
+                    ipaddress.IPv6Network(self.config['app']['custom_private_network'])
+                    private_ipv6_ranges.append(ipaddress.IPv6Network(self.config['app']['custom_private_network']))
+                except ValueError:
+                    pass
+
             for private_range in private_ipv6_ranges:
                 if ipaddress.IPv6Address(ip_addr) in private_range:
                     return True

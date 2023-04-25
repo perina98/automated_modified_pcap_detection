@@ -17,7 +17,7 @@ class Miscellaneous():
     '''
     Class for checking various information about packet structure for any inconsistencies
     '''
-    def __init__(self):
+    def __init__(self, config):
         '''
         Constructor
         Args:
@@ -27,6 +27,7 @@ class Miscellaneous():
         '''
         self.protocols = functions.Functions().get_protocols()
         self.snaplen_context = []
+        self.config = config
 
     def check_ports(self, packet):
         '''
@@ -147,7 +148,7 @@ class Miscellaneous():
     
     def check_invalid_payload(self, packet):
         '''
-        Check if the packet payload ends with multiple 0x00 bytes or if it ends with 16 same bytes
+        Check if the packet payload ends with multiple 0x00 bytes or if it ends with same bytes
         Args:
             packet (scapy packet): packet to check
 
@@ -155,13 +156,12 @@ class Miscellaneous():
             bool: True if the packet payload is invalid, False otherwise
         '''
         if packet.haslayer(Raw):
-            if packet[Raw].load.endswith(b'\x00\x00\x00\x00\x00\x00\x00\x00'):
-                return True
-            
-            # check if last 16 bytes are the same
-            if len(packet[Raw].load) >= 16:
-                last_16 = packet[Raw].load[-16:]
-                if last_16 == last_16[0:1] * 16:
+            bytes_to_check = self.config["app"]["check_last_bytes"]
+
+            # check if last bytes_to_check bytes are the same
+            if len(packet[Raw].load) >= bytes_to_check:
+                last_b = packet[Raw].load[-bytes_to_check:]
+                if last_b == last_b[0:1] * bytes_to_check:
                     return True
             
         return False

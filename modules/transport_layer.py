@@ -18,7 +18,7 @@ class TransportLayer():
     '''
     Class for checking transport layer for any inconsistencies
     '''
-    def __init__(self, id_pcap, session):
+    def __init__(self, config, id_pcap, session):
         '''
         Constructor
         Args:
@@ -29,6 +29,7 @@ class TransportLayer():
             None
         '''
         funct =  functions.Functions(id_pcap, session)
+        self.config = config
         self.streams = funct.get_tcp_streams()
         self.channels = funct.get_communication_channels(session.query(Packet).filter(Packet.id_pcap == id_pcap).all())
     
@@ -52,7 +53,9 @@ class TransportLayer():
                         continue
 
                     current_diff = abs(self.streams[stream][i + 1].packet_timestamp - self.streams[stream][i].packet_timestamp)
-                    if current_diff > stream_ref_time * 2:
+
+                    allowed_latency_inconsistency = self.config['app']['allowed_latency_inconsistency'] * stream_ref_time
+                    if current_diff > allowed_latency_inconsistency:
                         failed += 1
 
         return failed, len(self.streams)

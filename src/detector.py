@@ -205,7 +205,7 @@ class Detector():
         Returns:
             None
         '''
-        miscellaneous_mod = misc.Miscellaneous()
+        miscellaneous_mod = misc.Miscellaneous(self.config)
         while True:
             packet = in_queue.get()
             if packet is None:
@@ -261,6 +261,9 @@ class Detector():
         in_queue = multiprocessing.JoinableQueue()
         save_queue = multiprocessing.JoinableQueue()
         num_processes = multiprocessing.cpu_count() - 1
+
+        if self.config['app']['workers'] is not None:
+            num_processes = self.config['app']['workers'] - 1
 
         self.log.debug("Detected %d cpus", multiprocessing.cpu_count())
 
@@ -378,14 +381,14 @@ class Detector():
 
         if self.config['tests']['internet_layer']:
             self.log.debug("Running internet layer tests")
-            internet_layer_mod = internet_layer.InternetLayer(id_pcap, session)
+            internet_layer_mod = internet_layer.InternetLayer(self.config, id_pcap, session)
             packet_modifications["inconsistent_ttls"]['failed'], packet_modifications["inconsistent_ttls"]['total'] = internet_layer_mod.get_inconsistent_ttls()
             packet_modifications["inconsistent_fragmentation"]['failed'], packet_modifications["inconsistent_fragmentation"]['total'] = internet_layer_mod.get_inconsistent_fragmentation()
             packet_modifications["sudden_drops_for_ip_source"]['failed'], packet_modifications["sudden_drops_for_ip_source"]['total'] = internet_layer_mod.get_sudden_ip_source_traffic_drop()
 
         if self.config['tests']['transport_layer']:
             self.log.debug("Running transport layer tests")
-            transport_layer_mod = transport_layer.TransportLayer(id_pcap, session)
+            transport_layer_mod = transport_layer.TransportLayer(self.config, id_pcap, session)
             packet_modifications["inconsistent_interpacket_gaps"]['failed'], packet_modifications["inconsistent_interpacket_gaps"]['total'] = transport_layer_mod.get_inconsistent_interpacket_gaps()
             packet_modifications["inconsistent_mss"]['failed'], packet_modifications["inconsistent_mss"]['total'] = transport_layer_mod.get_inconsistent_mss()
             packet_modifications["inconsistent_window_size"]['failed'], packet_modifications["inconsistent_window_size"]['total'] = transport_layer_mod.get_inconsistent_window()
@@ -394,7 +397,7 @@ class Detector():
 
         if self.config['tests']['application_layer']:
             self.log.debug("Running application layer tests")
-            application_layer_mod = application_layer.ApplicationLayer(id_pcap, session)
+            application_layer_mod = application_layer.ApplicationLayer(self.config, id_pcap, session)
             packet_modifications["mismatched_dns_query_answer"]['failed'], packet_modifications["mismatched_dns_query_answer"]['total'] = application_layer_mod.get_mismatched_dns_query_answer()
             packet_modifications["mismatched_dns_answer_stack"]['failed'], packet_modifications["mismatched_dns_answer_stack"]['total'] = application_layer_mod.get_mismatched_dns_answer_stack()
             packet_modifications["missing_translation_of_visited_domain"]['failed'], packet_modifications["missing_translation_of_visited_domain"]['total'] = application_layer_mod.get_missing_translation_of_visited_domain()

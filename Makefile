@@ -10,9 +10,9 @@ all :
 dataset :
 	$(PYTHON) src/createdataset.py
 run_dataset :
-	$(PYTHON) main.py -c config.yml --dataset dataset -l debug
+	$(PYTHON) main.py --dataset dataset -l debug
 single :
-	$(PYTHON) main.py -c config.yml --input_pcap static/input.pcap -l debug
+	$(PYTHON) main.py --input_pcap static/input.pcap -l debug
 clean :
 	rm -rf dataset
 	rm -rf *.db

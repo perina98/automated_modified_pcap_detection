@@ -18,7 +18,7 @@ class ApplicationLayer():
     '''
     Class for checking application layer for any inconsistencies
     '''
-    def __init__(self, id_pcap, session):
+    def __init__(self, config, id_pcap, session):
         '''
         Constructor
         Args:
@@ -30,7 +30,7 @@ class ApplicationLayer():
         '''
         self.id_pcap = id_pcap
         self.session = session
-        self.functions =  functions.Functions(id_pcap, session)
+        self.functions =  functions.Functions(id_pcap, session, config)
         self.dns_pairs = self.functions.get_dns_pairs()
 
     def get_translation_of_unvisited_domains(self):
