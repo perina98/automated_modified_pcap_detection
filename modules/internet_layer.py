@@ -91,17 +91,27 @@ class InternetLayer():
         failed = 0
        
         for stream in ip_identifications_by_stream:
+            # if there is only one packet in the stream, there should be no fragmentation
             if len(ip_identifications_by_stream[stream]) == 1:
                 if ip_identifications_by_stream[stream][0].ip_flag == 0 and ip_identifications_by_stream[stream][0].ip_fragment_offset != 0:
                     failed += 1
                 if ip_identifications_by_stream[stream][0].ip_flag == 1 or ip_identifications_by_stream[stream][0].ip_fragment_offset != 0:
                     failed += 1
+            # if there are more packets in the stream, fragmentation is possible, but not in all cases
             if len(ip_identifications_by_stream[stream]) > 1:
                 for i in range(len(ip_identifications_by_stream[stream])):
-                    if ip_identifications_by_stream[stream][i].ip_flag == 0 and ip_identifications_by_stream[stream][i].ip_fragment_offset == 0:
-                        continue
+                    if ip_identifications_by_stream[stream][i].ip_flag == 0:
+                        if i == len(ip_identifications_by_stream[stream]) - 1 and ip_identifications_by_stream[stream][i].ip_fragment_offset == 0:
+                            failed += 1
+                            break
+                        if i != len(ip_identifications_by_stream[stream]) - 1:
+                            #print (str(ip_identifications_by_stream[stream][i].packet_timestamp) + 'here4' + ' ' + str(ip_identifications_by_stream[stream][i].ip_fragment_offset))
+                            failed += 1
+                            break
                     if (i != len(ip_identifications_by_stream[stream]) - 1 and ip_identifications_by_stream[stream][i].ip_flag != 1) or (i == 0 and ip_identifications_by_stream[stream][i].ip_fragment_offset != 0):
+                        #print (str(ip_identifications_by_stream[stream][i].packet_timestamp) + 'here5 ' + str(i) + ' ' + str(ip_identifications_by_stream[stream][i].ip_fragment_offset))
                         failed += 1
+                        break
         return failed, len(ip_identifications_by_stream)
 
     def get_sudden_ip_source_traffic_drop(self):

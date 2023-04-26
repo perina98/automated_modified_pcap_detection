@@ -66,7 +66,7 @@ class Config():
                     if key not in config_dict['database']:
                         return False
                     
-                required_keys = ['chunk_size', 'workers', 'custom_private_network', 'allowed_communication_silence', 'check_last_bytes', 'allowed_latency_inconsistency']
+                required_keys = ['chunk_size', 'ntp_timestamp_threshold', 'workers', 'custom_private_network', 'allowed_communication_silence', 'check_last_bytes', 'allowed_latency_inconsistency']
                 for key in required_keys:
                     if key not in config_dict['app']:
                         return False
@@ -90,8 +90,9 @@ class Config():
                 if type(config_dict['app']['custom_private_network']) is not str and config_dict['app']['custom_private_network'] is not None:
                     return False
                 
-                if type(config_dict['app']['allowed_latency_inconsistency']) is not int and type(config_dict['app']['allowed_latency_inconsistency']) is not float:
-                    return False
+                for key in ['allowed_latency_inconsistency', 'ntp_timestamp_threshold']:
+                    if type(config_dict['app'][key]) is not int and type(config_dict['app'][key]) is not float:
+                        return False
                 
                 for key in ['chunk_size', 'allowed_communication_silence', 'check_last_bytes']:
                     if type(config_dict['app'][key]) is not int or config_dict['app'][key] < 1:

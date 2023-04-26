@@ -13,7 +13,7 @@ import os
 import logging
 import re
 import yaml
-
+from tqdm import tqdm
 import multiprocessing
 
 from modules import link_layer, internet_layer, transport_layer, application_layer, misc, pcapdata, db
@@ -39,6 +39,7 @@ class Detector():
             None
         '''
         self.args = args
+        self.start_time = 0
         self.db = db.Database()
 
         with open(self.args.config, 'r') as f:
@@ -68,7 +69,10 @@ class Detector():
         if self.args.dataset_dir:
             pcaps = self.get_dataset_pcaps()
             for pcap in pcaps:
-                self.log.debug("Processing pcap: " + pcap)
+                if not os.path.exists(pcap):
+                    print('Input file does not exist')
+                    exit(1)
+                self.log.info("Processing pcap: " + pcap)
                 id_pcap = self.db.save_pcap(session, pcap)
                 self.check_pcap(pcap, id_pcap)
             exit(0)
@@ -80,6 +84,7 @@ class Detector():
             if not os.path.exists(self.args.input_pcap):
                 print('Input file does not exist')
                 exit(1)
+            self.log.info("Processing pcap: " + self.args.input_pcap)
             id_pcap = self.db.save_pcap(session, self.args.input_pcap)
             self.check_pcap(self.args.input_pcap, id_pcap)
             exit(0)
@@ -174,6 +179,7 @@ class Detector():
             'incorrect_packet_length': int(miscellaneous_mod.check_packet_length(packet)),
             'invalid_packet_payload': int(miscellaneous_mod.check_invalid_payload(packet)),
             'insuficient_capture_length': int(miscellaneous_mod.check_frame_len_and_cap_len(packet)),
+            'mismatched_ntp_timestamp': int(miscellaneous_mod.check_mismatched_ntp_timestamp(packet)),
         } 
 
         return packet_modifications
@@ -216,7 +222,7 @@ class Detector():
             shared_list.append(processed_packet)
             in_queue.task_done()
 
-    def save_worker(self, save_queue, id_pcap):
+    def save_worker(self, save_queue, id_pcap, packet_count):
         '''
         Save packets in queue for each chunk size of self.config['app']['chunk_size'] packets
         Args:
@@ -227,12 +233,16 @@ class Detector():
             None
         '''
         packet_chunk = []
+        self.start_time = time.time()
+        packets_processed = 0
         while True:
             packet = save_queue.get()
             if packet is None:
                 save_queue.task_done()
-                if len(packet_chunk) > 0:
-                    self.log.debug("Saving packets of chunk size " + str(len(packet_chunk)))
+                length_of_chunk = len(packet_chunk)
+                if length_of_chunk > 0:
+                    packets_processed += length_of_chunk
+                    self.print_time_remaining(packet_count, packets_processed, length_of_chunk)
                     self.save_packets(packet_chunk, id_pcap)
                 break
 
@@ -240,12 +250,43 @@ class Detector():
 
             packet_chunk.append(packet)
 
-            if len(packet_chunk) == self.config['app']['chunk_size']:
-                self.log.debug("Saving packets of chunk size " + str(len(packet_chunk)))
+            length_of_chunk = len(packet_chunk)
+
+            if length_of_chunk == self.config['app']['chunk_size']:
+                packets_processed += length_of_chunk
                 self.save_packets(packet_chunk, id_pcap)
+                self.print_time_remaining(packet_count, packets_processed, length_of_chunk)
+
                 packet_chunk = []
 
-    def run_processes(self, pcap_path, id_pcap, shared_list):
+    def print_time_remaining(self, packet_count, packets_processed, length_of_chunk):
+        '''
+        Print time remaining to finish processing packets
+        Args:
+            packet_count (int): Total number of packets
+            packets_processed (int): Number of packets processed
+            length_of_chunk (int): Length of chunk of packets
+
+        Returns:
+            None
+        '''
+        total_time_elapsed = time.time() - self.start_time
+        packets_per_second = packets_processed / total_time_elapsed
+        time_remaining = (packet_count - packets_processed) / packets_per_second
+
+                # define time units in seconds, minutes, and hours
+        time_units = [('seconds', 60), ('minutes', 60), ('hours', 24)]
+        unit = ''
+                # iterate over time units and convert time remaining as needed
+        for u, multiplier in time_units:
+            if time_remaining < multiplier:
+                unit = u
+                break
+            time_remaining /= multiplier
+
+        self.log.info(f"Processed {length_of_chunk} packets ({packets_processed} / {packet_count}). Est. time remaining: {time_remaining:.2f} {unit}")
+
+    def run_processes(self, pcap_path, id_pcap, shared_list, packet_count):
         '''
         Manage multiprocessing, start processes and initialize queues
 
@@ -276,7 +317,7 @@ class Detector():
             process.start()
 
         # Start save worker
-        process = multiprocessing.Process(target=self.save_worker, args=(save_queue, id_pcap))
+        process = multiprocessing.Process(target=self.save_worker, args=(save_queue, id_pcap, packet_count))
         workers.append(process)
         self.log.debug("Starting save worker")
         process.start()
@@ -308,8 +349,8 @@ class Detector():
         '''
         capinfos = self.get_capinfos_data(pcap_path)
 
-        packet_count = capinfos['Number of packets']
-        pcap_snaplen_limit = capinfos['snaplenlimit']
+        packet_count = int(capinfos['Number of packets'])
+        pcap_snaplen_limit = int(capinfos['snaplenlimit'])
         pcap_file_size = capinfos['File size']
         pcap_data_size = capinfos['Data size']
 
@@ -324,6 +365,7 @@ class Detector():
             'incorrect_packet_length': 0,
             'invalid_packet_payload': 0,
             'insuficient_capture_length': 0,
+            'mismatched_ntp_timestamp': 0,
 
             'missing_arp_traffic': {'failed': 0, 'total': 0},
             'inconsistent_mac_maps': {'failed': 0, 'total': 0},
@@ -353,10 +395,9 @@ class Detector():
         manager = multiprocessing.Manager()
         shared_list = manager.list([])
 
-        self.run_processes(pcap_path, id_pcap, shared_list)
+        self.run_processes(pcap_path, id_pcap, shared_list, packet_count)
 
-        self.log.debug("Accumulating results")
-        for packet in shared_list:
+        for packet in tqdm(shared_list, desc="Accumulating results", unit="packets", total=packet_count):
             for key in packet:
                 packet_modifications[key] += packet[key]
 

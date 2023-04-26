@@ -3,6 +3,7 @@ database:
   file: db.db
 app:
   chunk_size: 2000                    # number of packets to be processed in one chunk (required)
+  ntp_timestamp_threshold: 300        # threshold difference between NTP timestamp and packet timestamp (required)
   check_last_bytes: 16                # check last x bytes of the file (required) 
   allowed_communication_silence: 60   # communication silence in seconds (required)
   allowed_latency_inconsistency: 2    # latency should not be more than x times different (required)

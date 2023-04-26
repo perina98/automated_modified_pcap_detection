@@ -183,3 +183,23 @@ class Miscellaneous():
             return True
         return False
     
+    def check_mismatched_ntp_timestamp(self, packet):
+        """
+        NTP packets should have a timestamp of the same time as packet time
+        Args:
+
+        Returns:
+            int: Number of packets with inconsistent user agent
+        """
+        # NTP epoch is 1st January 1900, while packet time uses UNIX epoch 1st January 1970
+        ntp_epoch = 2208988800
+
+        if packet.haslayer(NTP):
+            ntp_timestamp = packet[NTP].sent
+            if ntp_timestamp != 0:
+                ntp_timestamp -= ntp_epoch
+                if abs(ntp_timestamp - packet.time) > self.config["app"]["ntp_timestamp_threshold"]:
+                    return True
+        
+        return False
+    
