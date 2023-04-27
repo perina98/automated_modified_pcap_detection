@@ -16,7 +16,6 @@ python 3.8 or higher
 sqlalchemy v2.0.9
 scapy v2.5.0
 pyyaml v6.0
-tqdm v4.65.0
 ```
 
 In order to generate dataset you will also need the following:
@@ -31,7 +30,6 @@ Use the package manager [pip](https://pip.pypa.io/en/stable/) to install require
 pip install sqlalchemy
 pip install scapy
 pip install pyyaml
-pip install tqdm
 ```
 
 Alternatively, you can just run this command that will install the requirements.
@@ -73,12 +71,13 @@ file   - filename for database that will be created in the current folder
 
 app consists of 6 subkeys
 ```
-chunk_size                      - (int) number of packets to be processed in one chunk (required)
+chunk_size                      - (int) number of packets to be processed in one chunk, minimum is 1 (required)
+buffer_multiplier               - (int) multiplier for the buffer size, memory and speed related, minimum is 2 (required)
 ntp_timestamp_threshold         - (int / float) threshold difference between NTP timestamp and packet timestamp (required)
 check_last_bytes                - (int) check last x bytes of the file (required)
 allowed_communication_silence   - (int) communication silence in seconds (required)
 allowed_latency_inconsistency   - (int / float) latency should not be more than x times different (required)
-workers                         - (int / null) number of workers, leave it empty to use all available cores
+workers                         - (int / null) number of workers, leave it empty to use all available cores, minimum is 2
 custom_private_network          - (ipv4/ipv6 network / null) if you want to add your own private network (e.g. 10.0.0.0/8), leave it empty otherwise
 ```
 

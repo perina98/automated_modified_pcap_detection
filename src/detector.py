@@ -13,7 +13,6 @@ import os
 import logging
 import re
 import yaml
-from tqdm import tqdm
 import multiprocessing
 
 from modules import link_layer, internet_layer, transport_layer, application_layer, misc, pcapdata, db
@@ -200,6 +199,9 @@ class Detector():
             self.db.save_packet(session, id_pcap, packet)
         
         session.commit()
+        session.close()
+        session.bind.dispose()
+        engine.dispose()
 
     def process_worker(self, in_queue, shared_list):
         '''
@@ -221,6 +223,24 @@ class Detector():
             processed_packet = self.process_packet(packet, miscellaneous_mod)
             shared_list.append(processed_packet)
             in_queue.task_done()
+
+            # WIP
+            if False and len(shared_list) >= self.config['app']['chunk_size'] * self.config['app']['buffer_multiplier']:
+                packet_modifications = {
+                    'mismatched_checksums': 0,
+                    'mismatched_protocols': 0,
+                    'incorrect_packet_length': 0,
+                    'invalid_packet_payload': 0,
+                    'insuficient_capture_length': 0,
+                    'mismatched_ntp_timestamp': 0,
+                }
+
+                for p in shared_list:
+                    for key in packet_modifications:
+                        packet_modifications[key] += p[key]
+                
+                shared_list = []
+                shared_list.append(packet_modifications)
 
     def save_worker(self, save_queue, id_pcap, packet_count):
         '''
@@ -299,8 +319,8 @@ class Detector():
             None
         '''
         # Create queues and processes
-        in_queue = multiprocessing.JoinableQueue()
-        save_queue = multiprocessing.JoinableQueue()
+        in_queue = multiprocessing.JoinableQueue(maxsize=self.config['app']['chunk_size'] * self.config['app']['buffer_multiplier'])
+        save_queue = multiprocessing.JoinableQueue(maxsize=self.config['app']['chunk_size'] * self.config['app']['buffer_multiplier'])
         num_processes = multiprocessing.cpu_count() - 1
 
         if self.config['app']['workers'] is not None:
@@ -397,7 +417,8 @@ class Detector():
 
         self.run_processes(pcap_path, id_pcap, shared_list, packet_count)
 
-        for packet in tqdm(shared_list, desc="Accumulating results", unit="packets", total=packet_count):
+        # acumulate results
+        for packet in shared_list:
             for key in packet:
                 packet_modifications[key] += packet[key]
 

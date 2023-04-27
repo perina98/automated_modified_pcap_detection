@@ -66,7 +66,7 @@ class Config():
                     if key not in config_dict['database']:
                         return False
                     
-                required_keys = ['chunk_size', 'ntp_timestamp_threshold', 'workers', 'custom_private_network', 'allowed_communication_silence', 'check_last_bytes', 'allowed_latency_inconsistency']
+                required_keys = ['chunk_size', 'buffer_multiplier', 'ntp_timestamp_threshold', 'workers', 'custom_private_network', 'allowed_communication_silence', 'check_last_bytes', 'allowed_latency_inconsistency']
                 for key in required_keys:
                     if key not in config_dict['app']:
                         return False
@@ -91,12 +91,15 @@ class Config():
                     return False
                 
                 for key in ['allowed_latency_inconsistency', 'ntp_timestamp_threshold']:
-                    if type(config_dict['app'][key]) is not int and type(config_dict['app'][key]) is not float:
+                    if (type(config_dict['app'][key]) is not int and type(config_dict['app'][key]) is not float) or config_dict['app'][key] < 0:
                         return False
                 
                 for key in ['chunk_size', 'allowed_communication_silence', 'check_last_bytes']:
                     if type(config_dict['app'][key]) is not int or config_dict['app'][key] < 1:
                         return False
+                    
+                if type(config_dict['app']['buffer_multiplier']) is not int or config_dict['app']['buffer_multiplier'] < 2:
+                    return False
                 
             return True
         except (yaml.YAMLError, TypeError, KeyError, UnicodeDecodeError) as exc:
