@@ -69,37 +69,51 @@ class ApplicationLayer():
         Returns:
             int: number of IP pairs with incomplete FTP
         '''
-        pkts = self.session.query(Packet).filter(
-            and_(
-                Packet.id_pcap == self.id_pcap,
-                or_(
-                    Packet.port_dst == 21,
-                    Packet.port_src == 21,
-                    Packet.port_dst == 20,
-                    Packet.port_src == 20
-                )
-            )
-        ).all()
+        streams = self.functions.get_tcp_streams()
 
         failed = 0
-        pairs = {}
-        for pkt in pkts:
-            # check if the packet is FTP
-            if pkt.port_src == 21 or pkt.port_dst == 21:
-                # check if the IP address pair is in the dictionary
-                key = (pkt.ip_src, pkt.ip_dst) if (pkt.ip_src, pkt.ip_dst) in pairs else (pkt.ip_dst, pkt.ip_src)
-                if key not in pairs:
-                    pairs[key] = {'ftp': False, 'ftp-data': False}
-                pairs[key]['ftp'] = True
+        ftp_streams = {}
+        is_ftp = False
+
+        # for each stream check that 3 way handshake is present
+        for stream in streams:
+            if len(streams[stream]) < 3:
+                continue
+
+            threeway = {'S': False, 'SA': False, 'A': False}
+            connected = False
+            for pkt in streams[stream]:
+                # check if the packet is 3 way handshake
+                if connected == False:
+                    if pkt.tcp_flags == 'S' or pkt.tcp_flags == 'SA' or pkt.tcp_flags == 'A':
+                        threeway[pkt.tcp_flags] = True
+                        if threeway['S'] and threeway['SA'] and threeway['A']:
+                            connected = True
+                        continue
+                if connected and pkt.is_ftp == 1:
+                    is_ftp = True
+                    break
             
-            # check if the packet is FTP-DATA
-            if pkt.port_src == 20 or pkt.port_dst == 20:
-                key = (pkt.ip_src, pkt.ip_dst) if (pkt.ip_src, pkt.ip_dst) in pairs else (pkt.ip_dst, pkt.ip_src)
-                if key not in pairs:
-                    # FTP-DATA should not come before FTP
-                    failed += 1
-                else:
-                    pairs[key]['ftp-data'] = True
+            if is_ftp:
+                ftp_streams[stream] = streams[stream]
+                is_ftp = False
+
+        pairs = {}
+        for stream in ftp_streams:
+            for pkt in ftp_streams[stream]:
+                if pkt.port_src == 21 or pkt.port_dst == 21:
+                    # check if the IP address pair is in the dictionary
+                    if stream not in pairs:
+                        pairs[stream] = {'ftp': False, 'ftp-data': False}
+                    pairs[stream]['ftp'] = True
+                
+                # check if the packet is FTP-DATA
+                if pkt.port_src == 20 or pkt.port_dst == 20:
+                    if stream not in pairs:
+                        # FTP-DATA should not come before FTP
+                        failed += 1
+                    else:
+                        pairs[stream]['ftp-data'] = True
 
         # check if the FTP and FTP-DATA are present in the same IP address pair
         for pair in pairs:
@@ -240,7 +254,7 @@ class ApplicationLayer():
         Returns:
             int: Number of packets with inconsistent user agent
         """
-        channels = self.functions.get_communication_channels(self.session.query(Packet).filter(
+        channels = self.functions.get_communication_channels_triplets(self.session.query(Packet).filter(
             and_(
                 Packet.id_pcap == self.id_pcap,
                 Packet.user_agent.isnot(None)

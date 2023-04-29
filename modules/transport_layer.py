@@ -47,7 +47,7 @@ class TransportLayer():
             #streams[stream].sort(key=lambda x: x.packet_timestamp)
             stream_ref_time = 0
             for i in range(len(self.streams[stream]) - 1):
-                if self.streams[stream][i].ack == 0 and self.streams[stream][i + 1].ack == self.streams[stream][i].seq + 1:
+                if self.streams[stream][i].tcp_flags == 'S':
                     if stream_ref_time == 0:
                         stream_ref_time = abs(self.streams[stream][i + 1].packet_timestamp - self.streams[stream][i].packet_timestamp)
                         continue
@@ -73,12 +73,13 @@ class TransportLayer():
         for stream in self.channels:
             stream_mss = {}
             for i in range(len(self.channels[stream])):
-                if self.channels[stream][i].mss not in stream_mss:
-                    stream_mss[self.channels[stream][i].mss] = 1
-                else:
-                    stream_mss[self.channels[stream][i].mss] += 1
+                if self.channels[stream][i].tcp_flags == 'S':
+                    if self.channels[stream][i].mss not in stream_mss:
+                        stream_mss[self.channels[stream][i].mss] = 1
+                    else:
+                        stream_mss[self.channels[stream][i].mss] += 1
             
-            if len(stream_mss) > 2:
+            if len(stream_mss) > 1:
                 failed += 1
         
         return failed, len(self.channels)
@@ -101,7 +102,7 @@ class TransportLayer():
                         stream_window[self.channels[stream][i].window] = 1
                     else:
                         stream_window[self.channels[stream][i].window] += 1
-            if len(stream_window) > 2:
+            if len(stream_window) > 1:
                 failed += 1
 
         return failed, len(self.channels)
@@ -139,27 +140,5 @@ class TransportLayer():
             if p == 0 and len(stream_ciphers['server']) > 0 and len(stream_ciphers['client']) > 0:
                 failed += 1
                 break
-
-        return failed, len(self.streams)
-
-    def get_incomplete_tcp_streams(self):
-        '''
-        WIP, not working properly I think
-        Check TCP stream flags
-        Args:
-
-        Returns:
-            int: Number of packets with incomplete TCP streams
-        '''
-        failed = 0
-
-        for stream in self.streams:
-            if 'S' not in self.streams[stream][0].tcp_flags or 'A' in self.streams[stream][0].tcp_flags:
-                failed += 1
-                continue
-            if not 'R' in self.streams[stream][-1].tcp_flags and not 'F' in self.streams[stream][-1].tcp_flags:
-                print (self.streams[stream][-1].tcp_flags, self.streams[stream][-1].packet_timestamp)
-                failed += 1
-                continue
 
         return failed, len(self.streams)

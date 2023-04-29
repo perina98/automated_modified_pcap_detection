@@ -93,7 +93,8 @@ class Database():
             'user_agent': None,
             'ip_flag': None,
             'ip_fragment_offset': None,
-            'ip_identification': None
+            'ip_identification': None,
+            'is_ftp': None
         }
 
         # save IP layer data
@@ -117,6 +118,11 @@ class Database():
                 pkt_data['tcp_flags'] = str(pkt[TCP].flags)
                 if 'MSS' in pkt[TCP].options:
                     pkt_data['mss'] = pkt[TCP].options['MSS']
+
+                if (pkt_data['port_src'] == 21 or pkt_data['port_dst'] == 21) and pkt.haslayer(Raw):
+                    raw_data = pkt[Raw].load.decode("utf-8", "ignore").lower()
+                    if "ftp" in raw_data:
+                        pkt_data['is_ftp'] = True
 
             # save UDP layer data
             elif pkt.haslayer(UDP):
@@ -251,6 +257,7 @@ class Database():
             ip_flag=pkt_data['ip_flag'],
             ip_fragment_offset=pkt_data['ip_fragment_offset'],
             ip_identification=pkt_data['ip_identification'],
+            is_ftp=pkt_data['is_ftp'],
             id_pcap=id_pcap
         )
         session.add(new_packet)

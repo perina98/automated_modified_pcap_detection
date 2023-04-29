@@ -10,12 +10,13 @@ all :
 dataset :
 	$(PYTHON) src/createdataset.py
 run_dataset :
-	$(PYTHON) main.py --dataset dataset -l debug
+	$(PYTHON) main.py --dataset dataset -o -l debug
 single :
-	$(PYTHON) main.py --input_pcap static/input.pcap -l debug
+	$(PYTHON) main.py --input_pcap static/input.pcap -o -l debug
 clean :
 	rm -rf dataset
 	rm -rf *.db
+	rm -rf *.html
 	rm -rf *.zip
 	find . -name '__pycache__' -exec rm -r {} +
 install :

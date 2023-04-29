@@ -54,6 +54,7 @@ class Packet(Base):
     ip_fragment_offset = Column(Integer)
     ip_identification = Column(Integer)
     length = Column(Integer)
+    is_ftp = Column(Integer)
     id_pcap = Column(Integer, ForeignKey('pcap.id_pcap'))
     pcap = relationship("Pcap", back_populates="packets")
 

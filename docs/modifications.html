@@ -61,6 +61,28 @@
         </style>
     </head>
     <body>
+        <table class="tg" style="margin:20px auto;">
+            <thead>
+                <tr>
+                    <th class="tg-0pky bold">Category</th>
+                    <th class="tg-0pky bold">Weight</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="tg-btxf">A</td>
+                    <td class="tg-btxf">1</td>
+                </tr>
+                <tr>
+                    <td class="tg-btxf">B</td>
+                    <td class="tg-btxf">3</td>
+                </tr>
+                <tr>
+                    <td class="tg-btxf">C</td>
+                    <td class="tg-btxf">5</td>
+                </tr>
+            </tbody>
+        </table>
         <table class="tg">
             <thead>
                 <tr>
@@ -71,15 +93,15 @@
                 <tr>
                     <th class="tg-0pky bold">Name</th>
                     <th class="tg-0pky bold">Function in code</th>
-                    <th class="tg-0pky bold">Impact</th>
+                    <th class="tg-0pky bold">Category</th>
                     <th class="tg-0pky bold">Dataset</th>
                     <th class="tg-0pky bold">Name</th>
                     <th class="tg-0pky bold">Function in code</th>
-                    <th class="tg-0pky bold">Impact</th>
+                    <th class="tg-0pky bold">Category</th>
                     <th class="tg-0pky bold">Dataset</th>
                     <th class="tg-0pky bold">Name</th>
                     <th class="tg-0pky bold">Function in code</th>
-                    <th class="tg-0pky bold">Impact</th>
+                    <th class="tg-0pky bold">Category</th>
                     <th class="tg-0pky bold">Dataset</th>
                 </tr>
             </thead>
@@ -89,19 +111,19 @@
                         DNS: Translation of unvisited domain(s)
                     </td>
                     <td class="tg-btxf checked">application_layer.py: get_translation_of_unvisited_domains()</td>
-                    <td class="tg-btxf checked">-</td>
-                    <td class="tg-btxf checked">-</td>
-                    <td class="tg-btxf checked">
-                        DNS: Missing translation of visited domain(s)
-                    </td>
-                    <td class="tg-btxf checked">application_layer.py: get_missing_translation_of_visited_domain()</td>
-                    <td class="tg-btxf checked">-</td>
+                    <td class="tg-btxf checked">B</td>
                     <td class="tg-btxf checked">-</td>
                     <td class="tg-btxf checked">
                         DNS: Missing translation of visited domain(s)
                     </td>
                     <td class="tg-btxf checked">application_layer.py: get_missing_translation_of_visited_domain()</td>
+                    <td class="tg-btxf checked">A</td>
                     <td class="tg-btxf checked">-</td>
+                    <td class="tg-btxf checked">
+                        DNS: Missing translation of visited domain(s)
+                    </td>
+                    <td class="tg-btxf checked">application_layer.py: get_missing_translation_of_visited_domain()</td>
+                    <td class="tg-btxf checked">A</td>
                     <td class="tg-btxf checked">-</td>
                 </tr>
                 <tr>
@@ -109,7 +131,7 @@
                         FTP: Only data transfer or control connection
                     </td>
                     <td class="tg-btxf checked">application_layer.py: get_incomplete_ftp()</td>
-                    <td class="tg-0pky checked">-</td>
+                    <td class="tg-0pky checked">B</td>
                     <td class="tg-0pky checked">-</td>
                     <td class="tg-0pky">
                         HTTP(S): Missing requests for external resources
@@ -121,7 +143,7 @@
                         DNS: Translation of unvisited domain(s)
                     </td>
                     <td class="tg-btxf checked">application_layer.py: get_translation_of_unvisited_domains()</td>
-                    <td class="tg-btxf checked">-</td>
+                    <td class="tg-btxf checked">B</td>
                     <td class="tg-0pky checked">-</td>
                 </tr>
                 <tr>
@@ -133,7 +155,7 @@
                     <td class="tg-btxf">-</td>
                     <td class="tg-btxf checked">HTTP: Different user agent</td>
                     <td class="tg-btxf checked">application_layer.py: get_inconsistent_user_agent()</td>
-                    <td class="tg-btxf checked">-</td>
+                    <td class="tg-btxf checked">C</td>
                     <td class="tg-btxf checked">-</td>
                     <td class="tg-btxf">
                         DNS/TLS/HTTP: Inconsistent hostname in related
@@ -166,13 +188,13 @@
                     <td class="tg-btxf needsreview">?</td>
                     <td class="tg-btxf checked">TLS: Different ciphersuite list</td>
                     <td class="tg-btxf checked">transport_layer.py: get_mismatched_ciphers()</td>
-                    <td class="tg-btxf checked">-</td>
+                    <td class="tg-btxf checked">C</td>
                     <td class="tg-btxf checked">-</td>
                     <td class="tg-btxf checked">
                         NTP/HTTP: Date field values inconsistency
                     </td>
                     <td class="tg-btxf checked">misc.py: check_mismatched_ntp_timestamp()</td>
-                    <td class="tg-btxf checked">-</td>
+                    <td class="tg-btxf checked">C</td>
                     <td class="tg-btxf checked">-</td>
                 </tr>
                 <tr>
@@ -180,13 +202,13 @@
                         IPv4/IPv6: Sudden drop in traffic for a given address
                     </td>
                     <td class="tg-btxf checked">internet_layer.py: get_sudden_ip_source_traffic_drop()</td>
-                    <td class="tg-btxf checked">-</td>
+                    <td class="tg-btxf checked">B</td>
                     <td class="tg-btxf checked">-</td>
                     <td class="tg-0pky checked">
                         TCP: Various window sizes for the same IP address
                     </td>
                     <td class="tg-btxf checked">transport_layer.py: get_inconsistent_window()</td>
-                    <td class="tg-btxf checked">-</td>
+                    <td class="tg-btxf checked">C</td>
                     <td class="tg-btxf checked">-</td>
                     <td class="tg-0pky">
                         TCP: Inconsistent protocol behaviour
@@ -208,11 +230,11 @@
                         address
                     </td>
                     <td class="tg-btxf checked">transport_layer.py: get_inconsistent_mss()</td>
-                    <td class="tg-btxf checked">-</td>
+                    <td class="tg-btxf checked">C</td>
                     <td class="tg-btxf checked">-</td>
                     <td class="tg-btxf checked">IPv4/IPv6/TCP/UDP/ICMP: Invalid checksum</td>
                     <td class="tg-btxf checked">misc.py: check_checksum()</td>
-                    <td class="tg-btxf checked">-</td>
+                    <td class="tg-btxf checked">A</td>
                     <td class="tg-btxf checked">-</td>
                 </tr>
                 <tr>
@@ -221,19 +243,19 @@
                         address
                     </td>
                     <td class="tg-btxf checked">application_layer.py: get_missing_icmp_ips()</td>
-                    <td class="tg-btxf checked">-</td>
+                    <td class="tg-btxf checked">B</td>
                     <td class="tg-btxf checked">-</td>
                     <td class="tg-0pky checked">
                         IPv4/IPv6: Various TTLs for the same IP address
                     </td>
                     <td class="tg-btxf checked">internet_layer.py: get_inconsistent_ttls()</td>
-                    <td class="tg-btxf checked">-</td>
+                    <td class="tg-btxf checked">C</td>
                     <td class="tg-0pky checked">-</td>
                     <td class="tg-0pky checked">
                         IPv4/IPv6: Sudden drop in traffic for a given address
                     </td>
                     <td class="tg-btxf checked">internet_layer.py: get_sudden_ip_source_traffic_drop()</td>
-                    <td class="tg-btxf checked">-</td>
+                    <td class="tg-btxf checked">B</td>
                     <td class="tg-btxf checked">-</td>
                 </tr>
                 <tr>
@@ -241,13 +263,13 @@
                         DHCP: Offer message for a host without connections
                     </td>
                     <td class="tg-btxf checked">application_layer.py: get_missing_dhcp_ips()</td>
-                    <td class="tg-buh4 checked">-</td>
+                    <td class="tg-buh4 checked">C</td>
                     <td class="tg-buh4 checked">-</td>
                     <td class="tg-btxf checked">
                         IPv4/IPv6: Inconsistent interpacket gaps
                     </td>
                     <td class="tg-btxf checked">transport_layer.py: get_inconsistent_interpacket_gaps()</td>
-                    <td class="tg-btxf checked">-</td>
+                    <td class="tg-btxf checked">B</td>
                     <td class="tg-btxf checked">-</td>
                     <td class="tg-btxf">
                         IPv4/IPv6: Various protocol field values for the same IP
@@ -262,19 +284,19 @@
                         ARP: Translation of a local host address
                     </td>
                     <td class="tg-btxf checked">link_layer.py: get_lost_traffic_by_arp()</td>
-                    <td class="tg-btxf checked">-</td>
+                    <td class="tg-btxf checked">A</td>
                     <td class="tg-0pky checked">-</td>
                     <td class="tg-0pky checked">
                         IPv4/IPv6: Different capture snaplen
                     </td>
                     <td class="tg-btxf checked">pcapdata.py: check_snaplen_context()</td>
-                    <td class="tg-btxf checked">-</td>
+                    <td class="tg-btxf checked">C</td>
                     <td class="tg-0pky checked">-</td>
                     <td class="tg-0pky checked">
                         IPv4/IPv6: Inconsistent protocol behaviour (fragmentation)
                     </td>
                     <td class="tg-btxf checked">internet_layer.py: get_inconsistent_fragmentation()</td>
-                    <td class="tg-btxf checked">-</td>
+                    <td class="tg-btxf checked">A</td>
                     <td class="tg-0pky checked">-</td>
                 </tr>
                 <tr>
@@ -282,19 +304,19 @@
                         ARP: Responses from a host without connections
                     </td>
                     <td class="tg-btxf checked">link_layer.py: get_lost_traffic_by_arp()</td>
-                    <td class="tg-btxf checked">-</td>
+                    <td class="tg-btxf checked">A</td>
                     <td class="tg-btxf checked">-</td>
                     <td class="tg-btxf checked">
                         ARP: Missing translation of a local host address
                     </td>
                     <td class="tg-btxf checked">link_layer.py: get_missing_arp_traffic()</td>
-                    <td class="tg-btxf checked">-</td>
+                    <td class="tg-btxf checked">C</td>
                     <td class="tg-btxf checked">-</td>
                     <td class="tg-btxf checked">
                         IPv4/IPv6: Invalid data at packet end
                     </td>
                     <td class="tg-btxf checked">misc.py: check_invalid_payload()</td>
-                    <td class="tg-btxf checked">-</td>
+                    <td class="tg-btxf checked">B</td>
                     <td class="tg-btxf checked">-</td>
                 </tr>
                 <tr>
@@ -304,11 +326,11 @@
                     <td class="tg-0pky"></td>
                     <td class="tg-0pky checked">ARP: Missing responses from a host</td>
                     <td class="tg-btxf checked">link_layer.py: get_missing_arp_responses()</td>
-                    <td class="tg-btxf checked">-</td>
+                    <td class="tg-btxf checked">A</td>
                     <td class="tg-0pky checked">-</td>
                     <td class="tg-0pky checked">IPv4/IPv6: Incorrect packet length</td>
                     <td class="tg-btxf checked">misc.py: check_packet_length()</td>
-                    <td class="tg-0pky checked">-</td>
+                    <td class="tg-0pky checked">C</td>
                     <td class="tg-0pky checked">-</td>
                 </tr>
                 <tr>
@@ -320,7 +342,7 @@
                         ETHERNET: Different addresses for the same IP address
                     </td>
                     <td class="tg-btxf checked">link_layer.py: get_inconsistent_mac_maps()</td>
-                    <td class="tg-btxf checked">-</td>
+                    <td class="tg-btxf checked">A</td>
                     <td class="tg-btxf checked">-</td>
                     <td class="tg-btxf">
                         ETHERNET/IPv4/IPv6: Preceeding connections
@@ -343,7 +365,7 @@
                         address
                     </td>
                     <td class="tg-btxf checked">application_layer.py: get_missing_icmp_ips()</td>
-                    <td class="tg-btxf checked">-</td>
+                    <td class="tg-btxf checked">B</td>
                     <td class="tg-btxf checked">-</td>
                 </tr>
                 <tr>
@@ -359,7 +381,7 @@
                         DHCP: Offer message for a host without connections
                     </td>
                     <td class="tg-btxf checked">application_layer.py: get_missing_dhcp_ips()</td>
-                    <td class="tg-buh4 checked">-</td>
+                    <td class="tg-buh4 checked">C</td>
                     <td class="tg-buh4 checked">-</td>
                 </tr>
                 <tr>
@@ -375,7 +397,7 @@
                         ARP: Translation of a local host address
                     </td>
                     <td class="tg-btxf checked">link_layer.py: get_lost_traffic_by_arp()</td>
-                    <td class="tg-btxf checked">-</td>
+                    <td class="tg-btxf checked">A</td>
                     <td class="tg-0pky checked">-</td>
                 </tr>
                 <tr>
@@ -391,7 +413,7 @@
                         ARP: Responses from a host without connections
                     </td>
                     <td class="tg-btxf checked">link_layer.py: get_lost_traffic_by_arp()</td>
-                    <td class="tg-btxf checked">-</td>
+                    <td class="tg-btxf checked">A</td>
                     <td class="tg-btxf checked">-</td>
                 </tr>
             </tbody>
@@ -404,7 +426,7 @@
                 <tr>
                     <th class="tg-0pky bold">Name</th>
                     <th class="tg-0pky bold">Function in code</th>
-                    <th class="tg-0pky bold">Impact</th>
+                    <th class="tg-0pky bold">Category</th>
                     <th class="tg-0pky bold">Dataset</th>
                 </tr>
             </thead>
@@ -412,31 +434,31 @@
                 <tr>
                     <td class="tg-btxf checked">Mismatched DNS query and answer</td>
                     <td class="tg-btxf checked">application_layer.py: get_mismatched_dns_query_answer()</td>
-                    <td class="tg-btxf checked">-</td>
+                    <td class="tg-btxf checked">C</td>
                     <td class="tg-btxf checked">-</td>
                 </tr>
                 <tr>
                     <td class="tg-btxf checked">Mismatched DNS CNAME answer stack</td>
                     <td class="tg-btxf checked">application_layer.py: get_mismatched_dns_answer_stack()</td>
-                    <td class="tg-btxf checked">-</td>
+                    <td class="tg-btxf checked">C</td>
                     <td class="tg-btxf checked">-</td>
                 </tr>
                 <tr>
                     <td class="tg-btxf checked">Usage of nonstandard ports</td>
                     <td class="tg-btxf checked">misc.py: check_ports()</td>
-                    <td class="tg-btxf checked">-</td>
+                    <td class="tg-btxf checked">A</td>
                     <td class="tg-btxf checked">-</td>
                 </tr>
                 <tr>
                     <td class="tg-btxf checked">Check for packets with mismatched frame and snaplen</td>
                     <td class="tg-btxf checked">misc.py: check_frame_len_and_cap_len()</td>
-                    <td class="tg-btxf checked">-</td>
+                    <td class="tg-btxf checked">C</td>
                     <td class="tg-btxf checked">-</td>
                 </tr>
                 <tr>
                     <td class="tg-btxf checked">Check for truncated packets, if file size is smaller than data size</td>
                     <td class="tg-btxf checked">pcapdata.py: check_file_data_size()</td>
-                    <td class="tg-btxf checked">-</td>
+                    <td class="tg-btxf checked">C</td>
                     <td class="tg-btxf checked">-</td>
                 </tr>
             </tbody>

@@ -14,7 +14,9 @@ import logging
 import re
 import yaml
 import multiprocessing
+from tqdm import tqdm
 
+from . import statistics
 from modules import link_layer, internet_layer, transport_layer, application_layer, misc, pcapdata, db
 from scapy.all import *
 from scapy.layers.tls import *
@@ -38,6 +40,7 @@ class Detector():
             None
         '''
         self.args = args
+        self.script_start_time = time.time()
         self.start_time = 0
         self.db = db.Database()
 
@@ -152,6 +155,9 @@ class Detector():
         '''
         pcaps = []
         self.log.debug("Getting pcaps from dataset directory")
+        if not os.path.exists(self.args.dataset_dir):
+            print('Dataset directory does not exist')
+            exit(1)
         for file in os.listdir(self.args.dataset_dir):
             if file.endswith(".pcap"):
                 pcaps.append(self.args.dataset_dir+'/'+file)
@@ -262,7 +268,7 @@ class Detector():
                 length_of_chunk = len(packet_chunk)
                 if length_of_chunk > 0:
                     packets_processed += length_of_chunk
-                    self.print_time_remaining(packet_count, packets_processed, length_of_chunk)
+                    self.print_time_remaining(packet_count, packets_processed)
                     self.save_packets(packet_chunk, id_pcap)
                 break
 
@@ -275,11 +281,11 @@ class Detector():
             if length_of_chunk == self.config['app']['chunk_size']:
                 packets_processed += length_of_chunk
                 self.save_packets(packet_chunk, id_pcap)
-                self.print_time_remaining(packet_count, packets_processed, length_of_chunk)
+                self.print_time_remaining(packet_count, packets_processed)
 
                 packet_chunk = []
 
-    def print_time_remaining(self, packet_count, packets_processed, length_of_chunk):
+    def print_time_remaining(self, packet_count, packets_processed):
         '''
         Print time remaining to finish processing packets
         Args:
@@ -294,17 +300,15 @@ class Detector():
         packets_per_second = packets_processed / total_time_elapsed
         time_remaining = (packet_count - packets_processed) / packets_per_second
 
-                # define time units in seconds, minutes, and hours
         time_units = [('seconds', 60), ('minutes', 60), ('hours', 24)]
         unit = ''
-                # iterate over time units and convert time remaining as needed
         for u, multiplier in time_units:
             if time_remaining < multiplier:
                 unit = u
                 break
             time_remaining /= multiplier
 
-        self.log.info(f"Processed {length_of_chunk} packets ({packets_processed} / {packet_count}). Est. time remaining: {time_remaining:.2f} {unit}")
+        self.log.info(f"Processed {packets_processed} / {packet_count} packets. Est. time remaining: {time_remaining:.2f} {unit}")
 
     def run_processes(self, pcap_path, id_pcap, shared_list, packet_count):
         '''
@@ -357,23 +361,14 @@ class Detector():
         for process in workers:
             process.join()
 
-    def check_pcap(self, pcap_path, id_pcap):
+    def init_modifications(self):
         '''
-        Check pcap file for modifications
+        Initialize modification dictionaries
         Args:
-            pcap_path (str): Path to pcap file
-            id_pcap (int): Id of pcap file
 
         Returns:
             None
         '''
-        capinfos = self.get_capinfos_data(pcap_path)
-
-        packet_count = int(capinfos['Number of packets'])
-        pcap_snaplen_limit = int(capinfos['snaplenlimit'])
-        pcap_file_size = capinfos['File size']
-        pcap_data_size = capinfos['Data size']
-
         pcap_modifications = {
             'snaplen_context': False,
             'file_and_data_size': False,
@@ -400,7 +395,6 @@ class Detector():
             'inconsistent_mss': {'failed': 0, 'total': 0},
             'inconsistent_window_size': {'failed': 0, 'total': 0},
             'mismatched_ciphers': {'failed': 0, 'total': 0},
-            'incomplete_tcp_streams': {'failed': 0, 'total': 0},
 
             'mismatched_dns_query_answer': {'failed': 0, 'total': 0},
             'mismatched_dns_answer_stack': {'failed': 0, 'total': 0},
@@ -412,13 +406,34 @@ class Detector():
             'inconsistent_user_agent': {'failed': 0, 'total': 0},
         }
 
+        return pcap_modifications, packet_modifications
+
+    def check_pcap(self, pcap_path, id_pcap):
+        '''
+        Check pcap file for modifications
+        Args:
+            pcap_path (str): Path to pcap file
+            id_pcap (int): Id of pcap file
+
+        Returns:
+            None
+        '''
+        capinfos = self.get_capinfos_data(pcap_path)
+
+        packet_count = int(capinfos['Number of packets'])
+        pcap_snaplen_limit = int(capinfos['snaplenlimit'])
+        pcap_file_size = capinfos['File size']
+        pcap_data_size = capinfos['Data size']
+
+        pcap_modifications, packet_modifications = self.init_modifications()
+
         manager = multiprocessing.Manager()
         shared_list = manager.list([])
 
         self.run_processes(pcap_path, id_pcap, shared_list, packet_count)
 
         # acumulate results
-        for packet in shared_list:
+        for packet in tqdm(shared_list, desc="Accumulating results", unit="packets", total=packet_count):
             for key in packet:
                 packet_modifications[key] += packet[key]
 
@@ -455,7 +470,6 @@ class Detector():
             packet_modifications["inconsistent_mss"]['failed'], packet_modifications["inconsistent_mss"]['total'] = transport_layer_mod.get_inconsistent_mss()
             packet_modifications["inconsistent_window_size"]['failed'], packet_modifications["inconsistent_window_size"]['total'] = transport_layer_mod.get_inconsistent_window()
             packet_modifications["mismatched_ciphers"]['failed'], packet_modifications["mismatched_ciphers"]['total'] = transport_layer_mod.get_mismatched_ciphers()
-            #packet_modifications["incomplete_tcp_streams"]['failed'], packet_modifications["incomplete_tcp_streams"]['total'] = transport_layer_mod.get_incomplete_tcp_streams()
 
         if self.config['tests']['application_layer']:
             self.log.debug("Running application layer tests")
@@ -469,37 +483,9 @@ class Detector():
             packet_modifications["missing_icmp_ips"]['failed'], packet_modifications["missing_icmp_ips"]['total'] = application_layer_mod.get_missing_icmp_ips()
             packet_modifications["inconsistent_user_agent"]['failed'], packet_modifications["inconsistent_user_agent"]['total'] = application_layer_mod.get_inconsistent_user_agent()
 
-        self.print_results(pcap_path, packet_count, pcap_modifications, packet_modifications)
 
-    def print_results(self, pcap_path, packet_count, pcap_modifications, packet_modifications):
-        '''
-        Print results of pcap file
-        Args:
-            pcap_path (str): Path to pcap file
-            packet_count (int): Number of packets in pcap file
-            pcap_modifications (dict): Dictionary of modifications
-            packet_modifications (dict): Dictionary of modifications
+        stats = statistics.Statistics(pcap_path, packet_count, pcap_modifications, packet_modifications, self.script_start_time)
+        stats.print_results()
 
-        Returns:
-            None
-        '''
-        pcap_keys = pcap_modifications.keys()
-        packet_keys = packet_modifications.keys()
-
-        print ("")
-        print ("=== Results ===")
-        print ("")
-
-        print("Pcap modifications:")
-        for key in pcap_keys:
-            if pcap_modifications[key]:
-                print (pcap_path," pcap_modifications['"+key+"'] = ", "Modified")
-            else:
-                print (pcap_path," pcap_modifications['"+key+"'] = ", "Not modified")
-
-        print("Packet modifications:")
-        for key in packet_keys:
-            if type(packet_modifications[key]) is dict:
-                print (pcap_path," packet_modifications['"+key+"'] = ", str(packet_modifications[key]['failed']) + "/" + str(packet_modifications[key]['total']))
-            else:
-                print (pcap_path," packet_modifications['"+key+"'] = ", str(packet_modifications[key]) + "/" + str(packet_count))
+        if self.args.outputhtml:
+            stats.generate_results_summary_file()

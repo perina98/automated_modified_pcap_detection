@@ -271,6 +271,25 @@ class Functions():
                     streams[key].append(row)
         return streams
     
+    def get_communication_channels_triplets(self, pkts):
+        '''
+        Get communication channels triplets (src, dst, port) from the pcap file
+        Args:
+            pkts (list): list of packets
+
+        Returns:
+            dict: dictionary of communication channels
+        '''
+        streams = {}
+        for row in pkts:
+            if row.type == 2048:
+                key = (row.ip_src, row.ip_dst, row.port_dst)
+                if key not in streams:
+                    streams[key] = [row]
+                else:
+                    streams[key].append(row)
+        return streams
+    
     def get_protocols(self):
         '''
         Get all protocols from static files

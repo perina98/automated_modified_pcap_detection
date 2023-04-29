@@ -16,6 +16,7 @@ python 3.8 or higher
 sqlalchemy v2.0.9
 scapy v2.5.0
 pyyaml v6.0
+tqdm v4.65.0
 ```
 
 In order to generate dataset you will also need the following:
@@ -30,6 +31,7 @@ Use the package manager [pip](https://pip.pypa.io/en/stable/) to install require
 pip install sqlalchemy
 pip install scapy
 pip install pyyaml
+pip install tqdm
 ```
 
 Alternatively, you can just run this command that will install the requirements.
