@@ -84,7 +84,10 @@ class Miscellaneous():
             del packet[ICMP].chksum
 
         # force recalculation of checksums
-        packet = packet.__class__(bytes(packet))
+        try:
+            packet = packet.__class__(bytes(packet))
+        except Exception:
+            return True
 
         if (original_checksums["TCP"] != None and original_checksums["TCP"] != packet[TCP].chksum) or \
             (original_checksums["UDP"] != None and original_checksums["UDP"] != packet[UDP].chksum) or \
@@ -103,48 +106,51 @@ class Miscellaneous():
         Returns:
             bool: True if the packet length is incorrect False otherwise
         '''
-        length = len(packet)
+        try:
+            length = len(packet)
 
-        # Ethernet header
-        length -= 14
+            # Ethernet header
+            length -= 14
 
-        if packet.haslayer(Padding):
-            length -= len(packet[Padding])
-        
-        if packet.haslayer(IP):
-            if packet[IP].len != length:
-                return True
-            
-            # IP header
-            length -= packet[IP].ihl * 4
-        
-        if packet.haslayer(IPv6):
-            # IPv6 header
-            length -= 40
-
-        if packet.haslayer(UDP):
-            if length != packet[UDP].len:
-                return True
-            # UDP header
-            length -= 8
-        if packet.haslayer(TCP):
             if packet.haslayer(Padding):
-                length += len(packet[Padding])
-            if length != len(packet[TCP]):
-                return True
-            # TCP header
-            length -= packet[TCP].dataofs * 4
-        if packet.haslayer(TLS):
-            # packet[TLS].len is the length of the TLS record
-            # payload is the length of the TLS record payload
-            # 5 is the length of the TLS record header
-            payload = packet[TLS].payload
-            if length != packet[TLS].deciphered_len + 5 + len(payload):
-                return True
-        if packet.haslayer(NTP):
-            if length != 48:
-                return True
-        return False
+                length -= len(packet[Padding])
+            
+            if packet.haslayer(IP):
+                if packet[IP].len != length:
+                    return True
+                
+                # IP header
+                length -= packet[IP].ihl * 4
+            
+            if packet.haslayer(IPv6):
+                # IPv6 header
+                length -= 40
+
+            if packet.haslayer(UDP):
+                if length != packet[UDP].len:
+                    return True
+                # UDP header
+                length -= 8
+            if packet.haslayer(TCP):
+                if packet.haslayer(Padding):
+                    length += len(packet[Padding])
+                if length != len(packet[TCP]):
+                    return True
+                # TCP header
+                length -= packet[TCP].dataofs * 4
+            if packet.haslayer(TLS):
+                # packet[TLS].len is the length of the TLS record
+                # payload is the length of the TLS record payload
+                # 5 is the length of the TLS record header
+                payload = packet[TLS].payload
+                if length != packet[TLS].deciphered_len + 5 + len(payload):
+                    return True
+            if packet.haslayer(NTP):
+                if length != 48:
+                    return True
+            return False
+        except Exception:
+            return True
     
     def check_invalid_payload(self, packet):
         '''
@@ -155,16 +161,19 @@ class Miscellaneous():
         Returns:
             bool: True if the packet payload is invalid, False otherwise
         '''
-        if packet.haslayer(Raw):
-            bytes_to_check = self.config["app"]["check_last_bytes"]
+        try:
+            if packet.haslayer(Raw):
+                bytes_to_check = self.config["app"]["check_last_bytes"]
 
-            # check if last bytes_to_check bytes are the same
-            if len(packet[Raw].load) >= bytes_to_check:
-                last_b = packet[Raw].load[-bytes_to_check:]
-                if last_b == last_b[0:1] * bytes_to_check:
-                    return True
-            
-        return False
+                # check if last bytes_to_check bytes are the same
+                if len(packet[Raw].load) >= bytes_to_check:
+                    last_b = packet[Raw].load[-bytes_to_check:]
+                    if last_b == last_b[0:1] * bytes_to_check:
+                        return True
+                
+            return False
+        except Exception:
+            return True
     
     def check_frame_len_and_cap_len(self, packet):
         '''
@@ -176,12 +185,15 @@ class Miscellaneous():
         Returns:
             bool: True if the packet was truncated, False otherwise
         '''
-        if hasattr(packet, 'wirelen'):
-            if packet.wirelen != len(packet):
+        try:
+            if hasattr(packet, 'wirelen'):
+                if packet.wirelen != len(packet):
+                    return True
+            else:
                 return True
-        else:
+            return False
+        except Exception:
             return True
-        return False
     
     def check_mismatched_ntp_timestamp(self, packet):
         """
@@ -195,7 +207,10 @@ class Miscellaneous():
         ntp_epoch = 2208988800
 
         if packet.haslayer(NTP):
-            ntp_timestamp = packet[NTP].sent
+            try:
+                ntp_timestamp = packet[NTP].sent
+            except Exception:
+                return True
             if ntp_timestamp != 0:
                 ntp_timestamp -= ntp_epoch
                 if abs(ntp_timestamp - packet.time) > self.config["app"]["ntp_timestamp_threshold"]:

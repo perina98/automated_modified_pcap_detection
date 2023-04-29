@@ -40,7 +40,7 @@ class Detector():
             None
         '''
         self.args = args
-        self.script_start_time = time.time()
+        self.file_start_time = 0
         self.start_time = 0
         self.db = db.Database()
 
@@ -75,6 +75,7 @@ class Detector():
                     print('Input file does not exist')
                     exit(1)
                 self.log.info("Processing pcap: " + pcap)
+                self.file_start_time = time.time()
                 id_pcap = self.db.save_pcap(session, pcap)
                 self.check_pcap(pcap, id_pcap)
             exit(0)
@@ -87,6 +88,7 @@ class Detector():
                 print('Input file does not exist')
                 exit(1)
             self.log.info("Processing pcap: " + self.args.input_pcap)
+            self.file_start_time = time.time()
             id_pcap = self.db.save_pcap(session, self.args.input_pcap)
             self.check_pcap(self.args.input_pcap, id_pcap)
             exit(0)
@@ -108,7 +110,7 @@ class Detector():
             match = re.search(r'(\d+) bytes', s)
             if match:
                 return int(match.group(1))
-        return None
+        return 1000000
     
     def get_capinfos_data(self, pcap_path):
         '''
@@ -205,8 +207,8 @@ class Detector():
             self.db.save_packet(session, id_pcap, packet)
         
         session.commit()
-        session.close()
         session.bind.dispose()
+        session.close()
         engine.dispose()
 
     def process_worker(self, in_queue, shared_list):
@@ -484,7 +486,7 @@ class Detector():
             packet_modifications["inconsistent_user_agent"]['failed'], packet_modifications["inconsistent_user_agent"]['total'] = application_layer_mod.get_inconsistent_user_agent()
 
 
-        stats = statistics.Statistics(pcap_path, packet_count, pcap_modifications, packet_modifications, self.script_start_time)
+        stats = statistics.Statistics(pcap_path, packet_count, pcap_modifications, packet_modifications, self.file_start_time, self.config['tests']['misc'])
         stats.print_results()
 
         if self.args.outputhtml:

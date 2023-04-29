@@ -126,7 +126,10 @@ class TransportLayer():
                         if set(stream_ciphers['client']) != set(json.loads(self.streams[stream][i].tls_ciphers)):
                             failed += 1
                             break
-                    stream_ciphers['client'] = list(set(stream_ciphers['client'] + json.loads(self.streams[stream][i].tls_ciphers)))
+                    try:
+                        stream_ciphers['client'] = list(set(stream_ciphers['client'] + json.loads(self.streams[stream][i].tls_ciphers)))
+                    except TypeError:
+                        continue
                 elif self.streams[stream][i].tls_msg_type == 2 and self.streams[stream][i].tls_ciphers:
                     stream_ciphers['server'].append(json.loads(self.streams[stream][i].tls_ciphers))
                 else:

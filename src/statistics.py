@@ -16,7 +16,7 @@ class Statistics():
     '''
     Class for handling results of modification detections and statistics
     '''
-    def __init__(self, pcap_path, packet_count, pcap_modifications, packet_modifications, start_time):
+    def __init__(self, pcap_path, packet_count, pcap_modifications, packet_modifications, start_time, misc_tests):
         '''
         Initialize the class
         Args:
@@ -27,6 +27,7 @@ class Statistics():
         self.packet_count = packet_count
         self.pcap_modifications = pcap_modifications
         self.packet_modifications = packet_modifications
+        self.misc_tests = misc_tests
         self.time = self.get_total_time(start_time)
         self.function_context = self.get_function_context()
         self.probability = self.get_probability()
@@ -60,8 +61,8 @@ class Statistics():
             function_context: friendly function names
         '''
         function_context = {
-            'snaplen_context': {'friendly_name': 'Snaplen context mismatch', 'category': 'C'},
-            'file_and_data_size': {'friendly_name': 'File and data size mismatch', 'category': 'C'},
+            'snaplen_context': {'friendly_name': 'Snaplen context mismatch', 'category': 'D'},
+            'file_and_data_size': {'friendly_name': 'File and data size mismatch', 'category': 'D'},
             'mismatched_checksums': {'friendly_name': 'Mismatched checksums', 'category': 'A'},
             'mismatched_protocols': {'friendly_name': 'Mismatched protocols', 'category': 'A'},
             'incorrect_packet_length': {'friendly_name': 'Incorrect packet length', 'category': 'C'},
@@ -102,7 +103,8 @@ class Statistics():
         weights = {
             'A': 1,
             'B': 3,
-            'C': 5
+            'C': 5,
+            'D': 20,
         }
         total_weight = 0
         probability = 0.00
@@ -117,6 +119,8 @@ class Statistics():
                     continue
                 probability += (value['failed'] / value['total']) * weights[self.function_context[key]['category']]
             else:
+                if not self.misc_tests:
+                    continue 
                 probability += (value / self.packet_count) * weights[self.function_context[key]['category']]
 
             total_weight += weights[self.function_context[key]['category']]

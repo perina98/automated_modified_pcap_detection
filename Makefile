@@ -1,7 +1,7 @@
 PYTHON := python
 ZIPNAME := 527341
 
-.PHONY: all dataset run_dataset single clean install zip
+.PHONY: all dataset run_dataset source single clean install zip
 
 all : 
 	@$(MAKE) -s dataset
@@ -11,8 +11,10 @@ dataset :
 	$(PYTHON) src/createdataset.py
 run_dataset :
 	$(PYTHON) main.py --dataset dataset -o -l debug
-single :
+source :
 	$(PYTHON) main.py --input_pcap static/input.pcap -o -l debug
+single :
+	$(PYTHON) main.py --input_pcap dataset/pcap_output_15.pcap -o -l debug
 clean :
 	rm -rf dataset
 	rm -rf *.db
