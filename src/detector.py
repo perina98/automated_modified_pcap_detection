@@ -50,6 +50,13 @@ class Detector():
         logging.basicConfig(level=self.args.log.upper(), format='%(message)s')
         self.log = logging.getLogger(__name__)
 
+        if self.args.filelog:
+            # turn on logging into log.log file, clear the file if it exists
+            open('log.log', 'w').close()
+            fh = logging.FileHandler('log.log')
+            fh.setLevel(logging.DEBUG)
+            self.log.addHandler(fh)
+
         load_layer('tls')
 
         self.log.debug("Ensuring database exists")
@@ -394,6 +401,7 @@ class Detector():
             'sudden_drops_for_ip_source': {'failed': 0, 'total': 0},
 
             'inconsistent_interpacket_gaps': {'failed': 0, 'total': 0},
+            'incomplete_tcp_streams': {'failed': 0, 'total': 0},
             'inconsistent_mss': {'failed': 0, 'total': 0},
             'inconsistent_window_size': {'failed': 0, 'total': 0},
             'mismatched_ciphers': {'failed': 0, 'total': 0},
@@ -469,6 +477,7 @@ class Detector():
             self.log.debug("Running transport layer tests")
             transport_layer_mod = transport_layer.TransportLayer(self.config, id_pcap, session)
             packet_modifications["inconsistent_interpacket_gaps"]['failed'], packet_modifications["inconsistent_interpacket_gaps"]['total'] = transport_layer_mod.get_inconsistent_interpacket_gaps()
+            packet_modifications["incomplete_tcp_streams"]['failed'], packet_modifications["incomplete_tcp_streams"]['total'] = transport_layer_mod.get_incomplete_tcp_streams()
             packet_modifications["inconsistent_mss"]['failed'], packet_modifications["inconsistent_mss"]['total'] = transport_layer_mod.get_inconsistent_mss()
             packet_modifications["inconsistent_window_size"]['failed'], packet_modifications["inconsistent_window_size"]['total'] = transport_layer_mod.get_inconsistent_window()
             packet_modifications["mismatched_ciphers"]['failed'], packet_modifications["mismatched_ciphers"]['total'] = transport_layer_mod.get_mismatched_ciphers()
@@ -491,3 +500,6 @@ class Detector():
 
         if self.args.outputhtml:
             stats.generate_results_summary_file()
+
+        if self.args.filelog:
+            stats.log_results_to_file()

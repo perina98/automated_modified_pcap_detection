@@ -29,6 +29,7 @@ class Config():
         parser.add_argument("-c", "--config", metavar="CONFIG_FILE_PATH", help="Config file, default is config.yml", required=False, type=str, default="config.yml")
         parser.add_argument("-l", "--log", choices=["debug", "info", "warning", "error", "critical"], help="Log level", required=False, default="INFO")
         parser.add_argument("-o", "--outputhtml", help="Output summary to html", required=False, action='store_true')
+        parser.add_argument("-f", "--filelog", help="Save log to log.log file", required=False, action='store_true')
 
         group = parser.add_mutually_exclusive_group(required=True)
         group.add_argument("-i", "--input_pcap", metavar="PCAP_FILE_PATH", help="Input PCAP file path", required=False, type=str)

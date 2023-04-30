@@ -39,7 +39,8 @@ class ApplicationLayer():
         Args:
 
         Returns:
-            int: number of packets with translation of unvisited domains
+            int: number of unvisited domains
+            int: number of all dns pairs
         '''
         packets = self.session.query(Packet).filter(Packet.id_pcap == self.id_pcap).all()
 
@@ -68,6 +69,7 @@ class ApplicationLayer():
 
         Returns:
             int: number of IP pairs with incomplete FTP
+            int: number of FTP pairs
         '''
         streams = self.functions.get_tcp_streams()
 
@@ -129,6 +131,7 @@ class ApplicationLayer():
 
         Returns:
             int: number of mismatched DNS query and answer pairs
+            int: number of all dns pairs
         '''
         failed = 0
 
@@ -146,6 +149,7 @@ class ApplicationLayer():
 
         Returns:
             int: number of mismatched DNS answer stacks
+            int: number of all dns pairs
         '''
         failed = 0
 
@@ -173,6 +177,7 @@ class ApplicationLayer():
 
         Returns:
             int: number of failed DNS query and answer pairs
+            int: number of all packets
         '''
         # filter only A and AAAA records
         pairs = {k: v for k, v in self.dns_pairs.items() if v['qtype'] == 1 or v['qtype'] == 28}
@@ -196,9 +201,15 @@ class ApplicationLayer():
             if not self.functions.is_private_ip(pkt.ip_src) and pkt.ip_src in ip_addresses:
                 if pkt.packet_timestamp < min(ip_addresses[pkt.ip_src]):
                     failed += 1
+                    continue
             if not self.functions.is_private_ip(pkt.ip_dst) and pkt.ip_dst in ip_addresses:
                 if pkt.packet_timestamp < min(ip_addresses[pkt.ip_dst]):
                     failed += 1
+                    continue
+
+            if (not self.functions.is_private_ip(pkt.ip_src) and pkt.ip_src not in ip_addresses) or \
+                (not self.functions.is_private_ip(pkt.ip_dst) and pkt.ip_dst not in ip_addresses):
+                failed += 1
 
         return failed, len(pkts)        
     
@@ -209,6 +220,7 @@ class ApplicationLayer():
 
         Returns:
             int: Number of packets with missing DHCP IPs
+            int: Number of all DHCP IPs
         '''
         # get all IPs from DHCP packets
         dhcp_ips = self.functions.get_dhcp_ips()
@@ -231,6 +243,7 @@ class ApplicationLayer():
 
         Returns:
             int: Number of packets with missing ICMP IPs
+            int: Number of all ICMP IPs
         '''
         # get all IPs from ICMP packets
         icmp_ips = self.functions.get_icmp_ips()
@@ -253,6 +266,7 @@ class ApplicationLayer():
 
         Returns:
             int: Number of packets with inconsistent user agent
+            int: Number of all communication channels
         """
         channels = self.functions.get_communication_channels_triplets(self.session.query(Packet).filter(
             and_(

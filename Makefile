@@ -10,14 +10,16 @@ all :
 dataset :
 	$(PYTHON) src/createdataset.py
 run_dataset :
-	$(PYTHON) main.py --dataset dataset -o -l debug
+	$(PYTHON) main.py --dataset dataset -o -f -l debug
 source :
-	$(PYTHON) main.py --input_pcap static/input.pcap -o -l debug
+	$(PYTHON) main.py --input_pcap static/input.pcap -o -f -l debug
 single :
-	$(PYTHON) main.py --input_pcap dataset/pcap_output_15.pcap -o -l debug
+	$(PYTHON) main.py --input_pcap dataset/pcap_output_01.pcap -o -f -l debug
 clean :
 	rm -rf dataset
 	rm -rf *.db
+	rm -rf *.bak.py
+	rm -rf *.log
 	rm -rf *.html
 	rm -rf *.zip
 	find . -name '__pycache__' -exec rm -r {} +

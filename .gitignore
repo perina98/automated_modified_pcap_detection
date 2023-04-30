@@ -2,6 +2,7 @@
 TODO
 /dataset
 /*.db
+/*.log
 /*.html
 /*.bak.py
 ignore/

@@ -114,10 +114,11 @@ class Database():
                 pkt_data['seq'] = pkt[TCP].seq
                 pkt_data['ack'] = pkt[TCP].ack
                 pkt_data['window'] = pkt[TCP].window
-                pkt_data['tcp_segment_len'] = len(pkt[TCP]) - pkt[TCP].dataofs * 4
+                pkt_data['tcp_segment_len'] = len(pkt[TCP]) - pkt[TCP].dataofs * 4 if (len(pkt[TCP]) - pkt[TCP].dataofs * 4) > 0 else 0
                 pkt_data['tcp_flags'] = str(pkt[TCP].flags)
-                if 'MSS' in pkt[TCP].options:
-                    pkt_data['mss'] = pkt[TCP].options['MSS']
+                mss = list(filter(lambda t: t[0] == 'MSS', pkt[TCP].options))
+                if mss:
+                    pkt_data['mss'] = mss[0][1]
 
                 if (pkt_data['port_src'] == 21 or pkt_data['port_dst'] == 21) and pkt.haslayer(Raw):
                     raw_data = pkt[Raw].load.decode("utf-8", "ignore").lower()

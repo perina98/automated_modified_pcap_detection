@@ -77,6 +77,7 @@ class Statistics():
             'inconsistent_fragmentation': {'friendly_name': 'Inconsistent fragmentation', 'category': 'A'},
             'sudden_drops_for_ip_source': {'friendly_name': 'Sudden drops for IP source', 'category': 'B'},
             'inconsistent_interpacket_gaps': {'friendly_name': 'Inconsistent interpacket gaps', 'category': 'B'},
+            'incomplete_tcp_streams': {'friendly_name': 'Incomplete tcp streams', 'category': 'B'},
             'inconsistent_mss': {'friendly_name': 'Inconsistent MSS', 'category': 'C'},
             'inconsistent_window_size': {'friendly_name': 'Inconsistent window size', 'category': 'C'},
             'mismatched_ciphers': {'friendly_name': 'Mismatched ciphers', 'category': 'C'},
@@ -162,6 +163,39 @@ class Statistics():
         print ("Probability of modification: " + str(self.probability) + "%")
         print ("Total time: " + str(self.time))
         print ("")
+
+    def log_results_to_file(self):
+        '''
+        Log results of the modification detection to a file
+        Args:
+
+        Returns:
+        '''
+        pcap_keys = self.pcap_modifications.keys()
+        packet_keys = self.packet_modifications.keys()
+
+        with open('log.log', 'a') as f:
+            f.write("=== Results === " + self.pcap_path + "\n\n")
+
+            f.write("Pcap modifications:\n")
+            for key in pcap_keys:
+                if self.pcap_modifications[key]:
+                    f.write(self.function_context[key]['friendly_name'] + " = " + "Modified\n")
+                else:
+                    f.write(self.function_context[key]['friendly_name'] + " = " + "Not modified\n")
+
+            f.write("\n")
+
+            f.write("Packet modifications:\n")
+            for key in packet_keys:
+                if type(self.packet_modifications[key]) is dict:
+                    f.write(self.function_context[key]['friendly_name'] + " = " + str(self.packet_modifications[key]['failed']) + "/" + str(self.packet_modifications[key]['total']) + "\n")
+                else:
+                    f.write(self.function_context[key]['friendly_name'] + " = " + str(self.packet_modifications[key]) + "/" + str(self.packet_count) + "\n")
+
+            f.write("\n")
+            f.write("Probability of modification: " + str(self.probability) + "%\n")
+            f.write("Total time: " + str(self.time) + "\n\n")
 
     def generate_results_summary_file(self):
         '''

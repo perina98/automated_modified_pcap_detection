@@ -201,7 +201,7 @@ class Miscellaneous():
         Args:
 
         Returns:
-            int: Number of packets with inconsistent user agent
+            bool: True if the NTP timestamp is not the same as the packet time, False otherwise
         """
         # NTP epoch is 1st January 1900, while packet time uses UNIX epoch 1st January 1970
         ntp_epoch = 2208988800

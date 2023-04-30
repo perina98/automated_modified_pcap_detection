@@ -30,6 +30,7 @@ class TransportLayer():
         '''
         funct =  functions.Functions(id_pcap, session)
         self.config = config
+        self.functions = funct
         self.streams = funct.get_tcp_streams()
         self.channels = funct.get_communication_channels(session.query(Packet).filter(Packet.id_pcap == id_pcap).all())
     
@@ -40,19 +41,27 @@ class TransportLayer():
 
         Returns:
             int: Number of packets with inconsistent interpacket gaps
+            int: Number of tcp streams
         '''
         failed = 0
 
         for stream in self.streams:
-            #streams[stream].sort(key=lambda x: x.packet_timestamp)
             stream_ref_time = 0
             for i in range(len(self.streams[stream]) - 1):
                 if self.streams[stream][i].tcp_flags == 'S':
+                    syn = self.streams[stream][i]
+                    synack = self.functions.find_synack(i, syn.seq+1, self.streams[stream])
                     if stream_ref_time == 0:
-                        stream_ref_time = abs(self.streams[stream][i + 1].packet_timestamp - self.streams[stream][i].packet_timestamp)
+                        if synack != None:
+                            stream_ref_time = abs(synack.packet_timestamp - syn.packet_timestamp)
+                            continue
+                        if i == len(self.streams[stream]) - 2:
+                            continue # incomplete tcp stream
+
+                    if synack == None:
                         continue
 
-                    current_diff = abs(self.streams[stream][i + 1].packet_timestamp - self.streams[stream][i].packet_timestamp)
+                    current_diff = abs(synack.packet_timestamp - syn.packet_timestamp)
 
                     allowed_latency_inconsistency = self.config['app']['allowed_latency_inconsistency'] * stream_ref_time
                     if current_diff > allowed_latency_inconsistency:
@@ -60,6 +69,36 @@ class TransportLayer():
 
         return failed, len(self.streams)
     
+    def get_incomplete_tcp_streams(self):
+        '''
+        Check if the response time is more than 2x the first response time in TCP handshake
+        Args:
+
+        Returns:
+            int: Number of packets with inconsistent interpacket gaps
+            int: Number of tcp streams
+        '''
+        failed = 0
+
+        for stream in self.streams:
+            stream_ref_time = 0
+            for i in range(len(self.streams[stream]) - 1):
+                if self.streams[stream][i].tcp_flags == 'S' or self.streams[stream][i].tcp_flags == 'SEC':
+                    syn = self.streams[stream][i]
+                    synack = self.functions.find_synack(i, syn.seq+1, self.streams[stream])
+                    if stream_ref_time == 0:
+                        if synack != None:
+                            stream_ref_time = abs(synack.packet_timestamp - syn.packet_timestamp)
+                            break
+                        else:
+                            failed += 1
+                            break
+                if stream_ref_time == 0 and i == len(self.streams[stream]) - 2:
+                    failed += 1
+                    break
+        
+        return failed, len(self.streams)
+
     def get_inconsistent_mss(self):
         '''
         Check if the MSS value is different in the same communication
@@ -67,6 +106,7 @@ class TransportLayer():
 
         Returns:
             int: Number of packets with inconsistent MSS
+            int: Number of communication channels
         '''
         failed = 0
 
@@ -75,12 +115,12 @@ class TransportLayer():
             for i in range(len(self.channels[stream])):
                 if self.channels[stream][i].tcp_flags == 'S':
                     if self.channels[stream][i].mss not in stream_mss:
-                        stream_mss[self.channels[stream][i].mss] = 1
-                    else:
-                        stream_mss[self.channels[stream][i].mss] += 1
+                        stream_mss[self.channels[stream][i].mss] = 0
+                    stream_mss[self.channels[stream][i].mss] += 1
             
             if len(stream_mss) > 1:
                 failed += 1
+
         
         return failed, len(self.channels)
     
@@ -91,6 +131,7 @@ class TransportLayer():
 
         Returns:
             int: Number of packets with inconsistent window size
+            int: Number of communication channels
         '''
         failed = 0
 
@@ -114,6 +155,7 @@ class TransportLayer():
 
         Returns:
             int: Number of packets with mismatched ciphers
+            int: Number of tcp streams
         '''
         failed = 0
 

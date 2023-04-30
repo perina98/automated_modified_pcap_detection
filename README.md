@@ -2,7 +2,7 @@
 
 Detector is a python script with custom modules designed to detect changes made to pcap files and packets themselves for forensic analysis and identification of malicious activities.
 
-This script offers a range of modules that can be seletively enabled or disabled. These modules have been developed to detect various types of suspicious activity such as packet modification, injection and more. 
+This script offers a range of modules that can be seletively enabled or disabled. These modules have been developed to detect various types of suspicious activity such as packet modification, injection and more. Different detection methods can be turned on or off in config.yml file. In the config.yml file it is also possible to tweak application parameters.
 
 One of the key features is the ability to generate a score that represents the probability that a given pcap file has been altered. Score is based on analysis and each function is given an impact score that is later calculated to give overal probability of pcap manipulation.
 
@@ -52,10 +52,16 @@ or just
 make dataset
 ```
 
-which will generate dataset files in /dataset folder which will be created if it does not exist yet.
+You will also need the following:
+```
+tcprewrite
+Around 225MB of free disk space.
+```
+
+which will generate 30 dataset files in /dataset folder which will be created if it does not exist yet.
 Default file used for creating the dataset is static/input.pcap. You can edit this in the src/createdataset.py script.
 
-After each file is created, information about this file and its modifications are printed on STDOUT.
+Information about each dataset file is printed on STDOUT before the file is created.
 
 ## Config file
 
@@ -109,10 +115,12 @@ TODO
 ## Options
 
 ```
--c, --config           Config file, default is config.yml
--i, --input_pcap       Input PCAP file path
--d, --dataset_dir      Dataset directory path
--l, --log              Log level
+-c, --config           (string) Config file, default is config.yml
+-i, --input_pcap       (string) Input PCAP file path
+-d, --dataset_dir      (string) Dataset directory path
+-l, --log              (string) Log level
+-o, --outputhtml       Output results to html file
+-f, --filelog          Log application tasks and result to log.log file
 ```
 
 ## License

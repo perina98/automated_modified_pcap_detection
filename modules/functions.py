@@ -135,6 +135,21 @@ class Functions():
 
         # filter only pairs with query and answer
         return {key: value for key, value in pairs.items() if 'query' in value and 'answers' in value}
+    
+    def find_synack(self, i, exp_ack, stream):
+        '''
+        Find syn ack packet in the stream
+        Args:
+            i (int): index of the packet in the stream
+            exp_ack (int): expected ack number
+            stream (list): list of packets
+        Returns:
+            Packet: syn ack packet if found, None otherwise
+        '''
+        for j in range(i, len(stream) - 1):
+            if (stream[j].tcp_flags == 'SA' or stream[j].tcp_flags == 'SAE') and stream[j].ack == exp_ack:
+                return stream[j]
+        return None
 
     def get_macs(self):
         '''

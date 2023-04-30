@@ -1,0 +1,229 @@
+<!--
+    weights = {
+        'A': 1,
+        'B': 3,
+        'C': 5,
+        'D': 20,
+    }
+
+
+    database:
+        engine: sqlite
+        file: db.db
+    app:
+        chunk_size: 2000                    # number of packets to be processed in one chunk (required)
+        buffer_multiplier: 3                # multiplier for the buffer size, memory and speed related (required)
+        ntp_timestamp_threshold: 300        # threshold difference between NTP timestamp and packet timestamp (required)
+        check_last_bytes: 16                # check last x bytes of the file (required) 
+        allowed_communication_silence: 30   # communication silence in seconds (required)
+        allowed_latency_inconsistency: 10   # latency should not be more than x times different (required)
+        workers:                            # number of workers, leave it empty to use all available cores
+        custom_private_network:             # if you want to add your own private network (e.g. 18.0.0.0/8), leave it empty otherwise
+    tests:
+        pcap: true
+        misc: true
+        link_layer: true
+        internet_layer: true
+        transport_layer: true
+        application_layer: true
+-->
+
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Datasets</title>
+        <style>
+            .tg {
+                border-collapse: collapse;
+                border-color: #ccc;
+                border-spacing: 0;
+            }
+            .tg td {
+                background-color: #fff;
+                border-color: #ccc;
+                border-style: solid;
+                border-width: 1px;
+                color: #333;
+                font-family: Arial, sans-serif;
+                font-size: 14px;
+                overflow: hidden;
+                padding: 10px 5px;
+                word-break: normal;
+            }
+            .tg th {
+                background-color: #f0f0f0;
+                border-color: #ccc;
+                border-style: solid;
+                border-width: 1px;
+                color: #333;
+                font-family: Arial, sans-serif;
+                font-size: 14px;
+                font-weight: normal;
+                overflow: hidden;
+                padding: 10px 5px;
+                word-break: normal;
+            }
+            .tg .tg-buh4 {
+                background-color: #f9f9f9;
+                text-align: left;
+                vertical-align: top;
+            }
+            .tg .tg-0pky {
+                border-color: inherit;
+                text-align: left;
+                vertical-align: top;
+            }
+            .tg .tg-btxf {
+                background-color: #f9f9f9;
+                border-color: inherit;
+                text-align: left;
+                vertical-align: top;
+            }
+            thead tr th.bold {
+                font-weight: bold;
+            }
+            .checked {
+                background-color: #7de481!important;
+            }
+            .needsreview {
+                background-color: #ffa08f!important;
+            }
+        </style>
+    </head>
+    <body>
+        <table class="tg" style="margin:20px auto;">
+            <thead>
+                <tr>
+                    <th class="tg-0pky bold">Input file</th>
+                    <th class="tg-0pky bold">Result</th>
+                </tr>
+            </thead>
+            <tbody> 
+                <tr>
+                    <td class="tg-btxf">static/input.pcap (baseline)</td>
+                    <td class="tg-btxf">4.52%</td>
+                </tr>
+                <tr>
+                    <td class="tg-btxf">dataset/pcap_output_01.pcap</td>
+                    <td class="tg-btxf">4.64%</td>
+                </tr>
+                <tr>
+                    <td class="tg-btxf">dataset/pcap_output_02.pcap</td>
+                    <td class="tg-btxf">6.67%</td>
+                </tr>
+                <tr>
+                    <td class="tg-btxf">dataset/pcap_output_03.pcap</td>
+                    <td class="tg-btxf">25.3%</td>
+                </tr>
+                <tr>
+                    <td class="tg-btxf">dataset/pcap_output_04.pcap</td>
+                    <td class="tg-btxf">7.73%</td>
+                </tr>
+                <tr>
+                    <td class="tg-btxf">dataset/pcap_output_05.pcap</td>
+                    <td class="tg-btxf">8.61%</td>
+                </tr>
+                <tr>
+                    <td class="tg-btxf">dataset/pcap_output_06.pcap</td>
+                    <td class="tg-btxf">7.97%</td>
+                </tr>
+                <tr>
+                    <td class="tg-btxf">dataset/pcap_output_07.pcap</td>
+                    <td class="tg-btxf">7.76%</td>
+                </tr>
+                <tr>
+                    <td class="tg-btxf">dataset/pcap_output_08.pcap</td>
+                    <td class="tg-btxf">4.65%</td>
+                </tr>
+                <tr>
+                    <td class="tg-btxf">dataset/pcap_output_09.pcap</td>
+                    <td class="tg-btxf">8.84%</td>
+                </tr>
+                <tr>
+                    <td class="tg-btxf">dataset/pcap_output_10.pcap</td>
+                    <td class="tg-btxf">5.86%</td>
+                </tr>
+                <tr>
+                    <td class="tg-btxf">dataset/pcap_output_11.pcap</td>
+                    <td class="tg-btxf">5.21%</td>
+                </tr>
+                <tr>
+                    <td class="tg-btxf">dataset/pcap_output_12.pcap</td>
+                    <td class="tg-btxf">6.71%</td>
+                </tr>
+                <tr>
+                    <td class="tg-btxf">dataset/pcap_output_13.pcap</td>
+                    <td class="tg-btxf">5.65%</td>
+                </tr>
+                <tr>
+                    <td class="tg-btxf">dataset/pcap_output_14.pcap</td>
+                    <td class="tg-btxf">20.7%</td>
+                </tr>
+                <tr>
+                    <td class="tg-btxf">dataset/pcap_output_15.pcap</td>
+                    <td class="tg-btxf">30.5%</td>
+                </tr>
+                <tr>
+                    <td class="tg-btxf">dataset/pcap_output_16.pcap</td>
+                    <td class="tg-btxf">6.8%</td>
+                </tr>
+                <tr>
+                    <td class="tg-btxf">dataset/pcap_output_17.pcap</td>
+                    <td class="tg-btxf">7.07%</td>
+                </tr>
+                <tr>
+                    <td class="tg-btxf">dataset/pcap_output_18.pcap</td>
+                    <td class="tg-btxf">24.56%</td>
+                </tr>
+                <tr>
+                    <td class="tg-btxf">dataset/pcap_output_19.pcap</td>
+                    <td class="tg-btxf">4.65%</td>
+                </tr>
+                <tr>
+                    <td class="tg-btxf">dataset/pcap_output_20.pcap</td>
+                    <td class="tg-btxf">25.52%</td>
+                </tr>
+                <tr>
+                    <td class="tg-btxf">dataset/pcap_output_21.pcap</td>
+                    <td class="tg-btxf">39.13%</td>
+                </tr>
+                <tr>
+                    <td class="tg-btxf">dataset/pcap_output_22.pcap</td>
+                    <td class="tg-btxf">4.75%</td>
+                </tr>
+                <tr>
+                    <td class="tg-btxf">dataset/pcap_output_23.pcap</td>
+                    <td class="tg-btxf">6.76%</td>
+                </tr>
+                <tr>
+                    <td class="tg-btxf">dataset/pcap_output_24.pcap</td>
+                    <td class="tg-btxf">41.11%</td>
+                </tr>
+                <tr>
+                    <td class="tg-btxf">dataset/pcap_output_25.pcap</td>
+                    <td class="tg-btxf">7.05%</td>
+                </tr>
+                <tr>
+                    <td class="tg-btxf">dataset/pcap_output_26.pcap</td>
+                    <td class="tg-btxf">6.17%</td>
+                </tr>
+                <tr>
+                    <td class="tg-btxf">dataset/pcap_output_27.pcap</td>
+                    <td class="tg-btxf">24.49%</td>
+                </tr>
+                <tr>
+                    <td class="tg-btxf">dataset/pcap_output_28.pcap</td>
+                    <td class="tg-btxf">67.93%</td>
+                </tr>
+                <tr>
+                    <td class="tg-btxf">dataset/pcap_output_29.pcap</td>
+                    <td class="tg-btxf">14.94%</td>
+                </tr>
+                <tr>
+                    <td class="tg-btxf">dataset/pcap_output_30.pcap</td>
+                    <td class="tg-btxf">41.19%</td>
+                </tr>
+            </tbody>
+        </table>
+    </body>
+</html>

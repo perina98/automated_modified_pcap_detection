@@ -41,6 +41,7 @@ class InternetLayer():
 
         Returns:
             int: number of inconsistent TTL values
+            int: number of communication channels
         '''
         packets = self.session.query(Packet).filter(Packet.id_pcap == self.id_pcap).all()
         channels = self.functions.get_communication_channels(packets)
@@ -71,6 +72,7 @@ class InternetLayer():
         
         Returns:
             int: number of packets with inconsistent fragmentation
+            int: number of ip_identifications by communication stream
         '''
         packets = self.session.query(Packet).filter(
             and_(
@@ -121,6 +123,7 @@ class InternetLayer():
 
         Returns:
             int: number of packets with sudden drop for IP source traffic
+            int: number of communication channels for IP source traffic
         '''
         streams_for_ip_source = self.functions.get_streams_for_ip_source()
         failed = 0

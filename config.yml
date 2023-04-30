@@ -6,10 +6,10 @@ app:
   buffer_multiplier: 3                # multiplier for the buffer size, memory and speed related (required)
   ntp_timestamp_threshold: 300        # threshold difference between NTP timestamp and packet timestamp (required)
   check_last_bytes: 16                # check last x bytes of the file (required) 
-  allowed_communication_silence: 60   # communication silence in seconds (required)
+  allowed_communication_silence: 30   # communication silence in seconds (required)
   allowed_latency_inconsistency: 10   # latency should not be more than x times different (required)
   workers:                            # number of workers, leave it empty to use all available cores
-  custom_private_network:             # if you want to add your own private network (e.g. 10.0.0.0/8), leave it empty otherwise
+  custom_private_network:             # if you want to add your own private network (e.g. 18.0.0.0/8), leave it empty otherwise
 tests:
   pcap: true
   misc: true
