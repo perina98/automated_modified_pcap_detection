@@ -60,6 +60,7 @@ Around 225MB of free disk space.
 
 which will generate 30 dataset files in /dataset folder which will be created if it does not exist yet.
 Default file used for creating the dataset is static/input.pcap. You can edit this in the src/createdataset.py script.
+The static/input.pcap example pcap file is based on [this research](https://www.sciencedirect.com/science/article/pii/S2352340920306788)
 
 Information about each dataset file is printed on STDOUT before the file is created.
 
