@@ -33,7 +33,7 @@ class LinkLayer():
     def get_inconsistent_mac_maps(self):
         '''
         Get number of inconsistent MAC address maps
-        If there is more than one MAC address for one IP address, it is considered suspicious
+        If there is more than one IP address for one MAC address, it is considered suspicious
         Args:
 
         Returns:

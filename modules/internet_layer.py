@@ -107,11 +107,9 @@ class InternetLayer():
                             failed += 1
                             break
                         if i != len(ip_identifications_by_stream[stream]) - 1:
-                            #print (str(ip_identifications_by_stream[stream][i].packet_timestamp) + 'here4' + ' ' + str(ip_identifications_by_stream[stream][i].ip_fragment_offset))
                             failed += 1
                             break
                     if (i != len(ip_identifications_by_stream[stream]) - 1 and ip_identifications_by_stream[stream][i].ip_flag != 1) or (i == 0 and ip_identifications_by_stream[stream][i].ip_fragment_offset != 0):
-                        #print (str(ip_identifications_by_stream[stream][i].packet_timestamp) + 'here5 ' + str(i) + ' ' + str(ip_identifications_by_stream[stream][i].ip_fragment_offset))
                         failed += 1
                         break
         return failed, len(ip_identifications_by_stream)

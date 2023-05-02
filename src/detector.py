@@ -356,10 +356,10 @@ class Detector():
         process.start()
 
         self.log.debug("Reading pcap file and putting packets in queues")
-        pkts = PcapReader(pcap_path)
-        for packet in pkts:
-            in_queue.put(packet)
-            save_queue.put(packet)
+        with PcapReader(pcap_path) as pcap_reader:
+            for packet in pcap_reader:
+                in_queue.put(packet)
+                save_queue.put(packet)
         
         # Put None in queues to signal workers to finish
         for i in range(num_processes):

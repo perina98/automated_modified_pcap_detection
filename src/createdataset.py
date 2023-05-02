@@ -141,7 +141,7 @@ def make_dataset_scapy(pkts):
     wrpcap(DATASET_DIR+'/'+PREFIX+'06.pcap', pkts)
     pkts = copy.deepcopy(orig)
 
-    print('7. Randomize IP addresses')
+    print('7. Randomize all IP addresses')
     for pkt in pkts:
         if pkt.haslayer(IP):
             pkt[IP].src = random_ip
@@ -176,7 +176,7 @@ def make_dataset_scapy(pkts):
     pkts = copy.deepcopy(orig)
 
 
-    print('11. Change src IP 1.1.1.1 and protocol to 17 for ip.dst == 4.122.55.2')
+    print('11. Change protocol to 17, MAC to ffs, port to 443:4 for TCP and 53:4 for UDP for IP communication 10.4.2.27 and 10.2.2.27')
     for pkt in pkts:
         if pkt.haslayer(IP):
             if pkt[IP].src == '10.4.2.27' or pkt[IP].src == '10.2.2.27':

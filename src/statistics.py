@@ -10,6 +10,7 @@
 ##################################################
 
 import time
+import math
 from xml.etree import ElementTree as ET
 
 class Statistics():
@@ -30,7 +31,9 @@ class Statistics():
         self.misc_tests = misc_tests
         self.time = self.get_total_time(start_time)
         self.function_context = self.get_function_context()
-        self.probability = self.get_probability()
+
+        avg = self.get_weighted_average()
+        self.probability = self.get_probability(avg)
 
     def get_total_time(self, start_time):
         '''
@@ -92,14 +95,31 @@ class Statistics():
         }
 
         return function_context
+    
+    def get_probability(self, weighted_average):
+        '''
+        Transform weighted_average to the resulting probability by logistic function
+        Args:
+            weighted_average: weighted_average of modification
 
-    def get_probability(self):
+        Returns:
+            resulting_probability: resulting probability of modification
+        '''
+        L = 100
+        x_0 = 10
+        k = 0.15
+
+        resulting_probability = L / (1 + math.exp(-k * (weighted_average - x_0)))
+
+        return round(resulting_probability, 2)
+    
+    def get_weighted_average(self):
         '''
         Calculate probability of modification
         Args:
 
         Returns:
-            probability: probability of modification
+            average: weighted average
         '''
         weights = {
             'A': 1,
@@ -126,8 +146,8 @@ class Statistics():
 
             total_weight += weights[self.function_context[key]['category']]
 
-        probability = (probability / total_weight) * 100
-        return round(probability, 2)
+        avg = (probability / total_weight) * 100
+        return round(avg, 2)
 
     def print_results(self):
         '''

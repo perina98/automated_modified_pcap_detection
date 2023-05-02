@@ -1,7 +1,7 @@
 ##################################################
-## This module provides necessary functions for other modules
+## This module represents detection module for PCAP specific data
 ##################################################
-## File: functions.py
+## File: pcapdata.py
 ## Author: Lukáš Perina
 ## Email: 527341@mail.muni.cz
 ## Programme: FI N-SWE Software Engineering
@@ -14,7 +14,7 @@ from database import Packet
 
 class PcapData():
     '''
-    Class that provides functions for other modules
+    Class that provides detection methods specific to PCAP files
     '''
     def __init__(self, id_pcap = None, session = None):
         '''
