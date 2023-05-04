@@ -36,7 +36,7 @@ class TransportLayer():
     
     def get_inconsistent_interpacket_gaps(self):
         '''
-        Check if the response time is more than 2x the first response time in TCP handshake
+        Check if the response time is more than x times different than the first response time in TCP handshake
         Args:
 
         Returns:

@@ -19,7 +19,7 @@ import logging
 import random
 logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
 from scapy.all import *
-from scapy.all import ICMP, IP, sr1
+from scapy.all import ICMP, IP
 from scapy.layers.tls import *
 
 random.seed(1)
@@ -52,7 +52,7 @@ def ensure_file():
     '''
     print('Checking for input file: '+INFILE)
     if not os.path.isfile(INFILE):
-        print('Input file input.pcap does not exist in the static directory')
+        print('Input file '+INFILE+' does not exist. Exiting.')
         exit(1)
 
 def adjust_paths():
