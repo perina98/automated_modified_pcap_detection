@@ -38,7 +38,7 @@ class LinkLayer():
 
         Returns:
             int: number of packets with inconsistent MAC address maps
-            int: number of all macs
+            int: number of all IP addresses
         '''
         macs = self.functions.get_macs()
         failed = 0

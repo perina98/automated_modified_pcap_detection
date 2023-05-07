@@ -26,6 +26,7 @@ tcprewrite
 ```
 
 Use the package manager [pip](https://pip.pypa.io/en/stable/) to install requirements like sqlalchemy and scapy.
+These requirements are also stored in a requirements.txt file.
 
 ```bash
 pip install sqlalchemy
@@ -38,6 +39,11 @@ Alternatively, you can just run this command that will install the requirements.
 ```bash
 make install
 ```
+or run
+```bash
+pip install -r requirements.txt
+```
+directly.
 
 ## Generating dataset
 
@@ -58,7 +64,7 @@ tcprewrite
 Around 225MB of free disk space.
 ```
 
-which will generate 30 dataset files in /dataset folder which will be created if it does not exist yet.
+which will generate 30 dataset files in ./dataset folder which will be created if it does not exist yet.
 Default file used for creating the dataset is static/input.pcap. You can edit this in the src/createdataset.py script.
 The static/input.pcap example pcap file is based on [this research](https://www.sciencedirect.com/science/article/pii/S2352340920306788)
 
@@ -66,10 +72,9 @@ Information about each dataset file is printed on STDOUT before the file is crea
 
 ## Config file
 
-Config file is crucial for running the application. If no -c or --config options are specified, config.yml is used. If file does not exists, program ends.
+Config file is crucial for running the application. If no `-c` or `--config` options are specified, config.yml is used. If file does not exist, program ends.
 
 Config consists of 3 main root keys:
-
 database, app, tests
 
 database contains 2 subkeys
@@ -78,7 +83,7 @@ engine - database engine, only sqlite was tested
 file   - filename for database that will be created in the current folder
 ```
 
-app consists of 6 subkeys
+app consists of 8 subkeys
 ```
 chunk_size                      - (int) number of packets to be processed in one chunk, minimum is 1 (required)
 buffer_multiplier               - (int) multiplier for the buffer size, memory and speed related, minimum is 2 (required)
@@ -86,8 +91,8 @@ ntp_timestamp_threshold         - (int / float) threshold difference between NTP
 check_last_bytes                - (int) check last x bytes of the file (required)
 allowed_communication_silence   - (int) communication silence in seconds (required)
 allowed_latency_inconsistency   - (int / float) latency should not be more than x times different (required)
-workers                         - (int / null) number of workers, leave it empty to use all available cores, minimum is 2
-custom_private_network          - (ipv4/ipv6 network / null) if you want to add your own private network (e.g. 10.0.0.0/8), leave it empty otherwise
+workers                         - (int / none) number of workers, leave it empty to use all available cores, minimum is 2
+custom_private_network          - (ipv4/ipv6 network / none) if you want to add your own private network (e.g. 18.0.0.0/8), leave it empty otherwise
 ```
 
 tests consist of 6 subkeys representing each test module
@@ -111,7 +116,51 @@ python main.py --input_pcap static/input.pcap
 
 ## Example output
 
-TODO
+```bash
+Processing pcap: static/input.pcap
+Processed 3000 / 12000 packets. Est. time remaining: 18.01 seconds
+Processed 6000 / 12000 packets. Est. time remaining: 13.33 seconds
+Processed 9000 / 12000 packets. Est. time remaining: 6.55 seconds
+Processed 12000 / 12000 packets. Est. time remaining: 0.00 seconds
+Accumulating results: 100%|████████████████████████████████████████████████| 12000/12000 [00:01<00:00, 6143.90packets/s]
+
+=== Results === static/input.pcap
+
+Pcap modifications:
+Snaplen context mismatch  =  Not modified
+File and data size mismatch  =  Not modified
+
+Packet modifications:
+Mismatched checksums  =  0/12000
+Mismatched protocols  =  1954/12000
+Incorrect packet length  =  0/12000
+Invalid packet payload  =  2/12000
+Insuficient capture length  =  0/12000
+Mismatched NTP timestamp  =  0/12000
+Missing ARP traffic  =  5/18
+Inconsistent MAC maps  =  10/199
+Lost ARP traffic  =  3/16
+Missing ARP responses  =  6/16
+Inconsistent TTLs  =  8/238
+Inconsistent fragmentation  =  0/11716
+Sudden drops for IP source  =  15/173
+Inconsistent interpacket gaps  =  12/139
+Incomplete tcp streams  =  73/139
+Inconsistent MSS  =  0/238
+Inconsistent window size  =  4/238
+Mismatched ciphers  =  0/139
+Mismatched DNS query answer  =  0/157
+Mismatched DNS answer stack  =  0/157
+Missing translation of visited domain  =  7426/12000
+Translation of unvisited domains  =  16/157
+Incomplete FTP  =  0/0
+Missing DHCP IPs  =  0/1
+Missing ICMP IPs  =  0/3
+Inconsistent user agent  =  1/23
+
+Probability of modification: 30.53%
+Total time: 36.83 seconds
+```
 
 ## Options
 
