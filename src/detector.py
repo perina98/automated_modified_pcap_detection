@@ -88,7 +88,7 @@ class Detector():
             exit(0)
 
         if self.args.input_pcap:
-            if not self.args.input_pcap.endswith(".pcap"):
+            if not (self.args.input_pcap.endswith(".pcap") or self.args.input_pcap.endswith(".pcapng")):
                 print('Input file is not pcap')
                 exit(1)
             if not os.path.exists(self.args.input_pcap):
@@ -168,7 +168,7 @@ class Detector():
             print('Dataset directory does not exist')
             exit(1)
         for file in os.listdir(self.args.dataset_dir):
-            if file.endswith(".pcap"):
+            if file.endswith(".pcap") or file.endswith(".pcapng"):
                 pcaps.append(self.args.dataset_dir+'/'+file)
         self.log.debug("Found " + str(len(pcaps)) + " pcaps")
         return pcaps

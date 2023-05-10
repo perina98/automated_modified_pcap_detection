@@ -1,6 +1,6 @@
 # Detector 
 
-Detector is a python script with custom modules designed to detect changes made to pcap files and packets themselves for forensic analysis and identification of malicious activities.
+Detector is a python script with custom modules designed to detect changes made to pcap files and packets themselves for forensic analysis and identification of malicious activities. Application also provides support for pcapng files.
 
 This script offers a range of modules that can be seletively enabled or disabled. These modules have been developed to detect various types of suspicious activity such as packet modification, injection and more. Different detection methods can be turned on or off in config.yml file. In the config.yml file it is also possible to tweak application parameters.
 
@@ -11,8 +11,8 @@ One of the key features is the ability to generate a score that represents the p
 Requirements for this scipts are the following:
 
 ```
-capinfos
-python 3.8 or higher
+capinfos (Included in Wireshark)
+python 3.8 or higher with pip
 sqlalchemy v2.0.9
 scapy v2.5.0
 pyyaml v6.0
@@ -22,11 +22,11 @@ tqdm v4.65.0
 In order to generate dataset you will also need the following:
 
 ```
-tcprewrite
+tcprewrite (Part of tcpreplay)
 ```
 
 Use the package manager [pip](https://pip.pypa.io/en/stable/) to install requirements like sqlalchemy and scapy.
-These requirements are also stored in a requirements.txt file.
+These requirements are also stored in a requirements.txt file for easier installation.
 
 ```bash
 pip install sqlalchemy
@@ -116,7 +116,7 @@ python main.py --input_pcap static/input.pcap
 
 ## Example output
 
-```bash
+```
 Processing pcap: static/input.pcap
 Processed 3000 / 12000 packets. Est. time remaining: 18.01 seconds
 Processed 6000 / 12000 packets. Est. time remaining: 13.33 seconds

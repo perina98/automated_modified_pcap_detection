@@ -154,21 +154,23 @@ class Database():
                         ptype = ans.type
                     except AttributeError:
                         continue
-                    if type(ans.rrname) is bytes:
-                        rrname = ans.rrname.decode()
-                    
-                    if type(ans.rdata) is bytes:
-                        rdata = ans.rdata.decode()
+                    try:
+                        if type(ans.rrname) is bytes:
+                            rrname = ans.rrname.decode()
+                        
+                        if type(ans.rdata) is bytes:
+                            rdata = ans.rdata.decode()
 
-                    if type(ans.rdata) is list:
-                        srdata = []
-                        for item in ans.rdata:
-                            if type(item) is bytes:
-                                srdata.append(item.decode())
-                            else:
-                                srdata.append(item)
-                        rdata = srdata
-
+                        if type(ans.rdata) is list:
+                            srdata = []
+                            for item in ans.rdata:
+                                if type(item) is bytes:
+                                    srdata.append(item.decode())
+                                else:
+                                    srdata.append(item)
+                            rdata = srdata
+                    except UnicodeDecodeError:
+                        continue
 
                     an.append({ 'rrname': rrname, 'rdata': rdata, 'type': ptype })
 

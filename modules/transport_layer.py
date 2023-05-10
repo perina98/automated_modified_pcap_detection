@@ -40,7 +40,7 @@ class TransportLayer():
         Args:
 
         Returns:
-            int: Number of packets with inconsistent interpacket gaps
+            int: Number of streams with inconsistent interpacket gaps
             int: Number of tcp streams
         '''
         failed = 0
@@ -66,16 +66,17 @@ class TransportLayer():
                     allowed_latency_inconsistency = self.config['app']['allowed_latency_inconsistency'] * stream_ref_time
                     if current_diff > allowed_latency_inconsistency:
                         failed += 1
+                        break
 
         return failed, len(self.streams)
     
     def get_incomplete_tcp_streams(self):
         '''
-        Check if the response time is more than 2x the first response time in TCP handshake
+        Check if the TCP stream starts with a SYN / SYN-ACK
         Args:
 
         Returns:
-            int: Number of packets with inconsistent interpacket gaps
+            int: Number of streams with missing SYN / SYN-ACK
             int: Number of tcp streams
         '''
         failed = 0
