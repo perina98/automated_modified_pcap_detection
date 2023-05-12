@@ -43,7 +43,18 @@ class InternetLayer():
             int: number of inconsistent TTL values
             int: number of communication channels
         '''
-        packets = self.session.query(Packet).filter(Packet.id_pcap == self.id_pcap).all()
+        packets = self.session.query(
+            Packet.tcp_flags,
+            Packet.ttl, 
+            Packet.protocol, 
+            Packet.ip_src, 
+            Packet.ip_dst
+            ).filter(
+            and_(
+                Packet.id_pcap == self.id_pcap,
+                Packet.type == 2048
+            )
+            ).all()
         channels = self.functions.get_communication_channels(packets)
 
         failed = 0
@@ -74,10 +85,17 @@ class InternetLayer():
             int: number of packets with inconsistent fragmentation
             int: number of ip_identifications by communication stream
         '''
-        packets = self.session.query(Packet).filter(
+        packets = self.session.query(
+            Packet.ip_src,
+            Packet.ip_dst,
+            Packet.ip_identification,
+            Packet.ip_flag,
+            Packet.ip_fragment_offset
+            ).filter(
             and_(
                 Packet.id_pcap == self.id_pcap,
                 Packet.ip_identification != 0,
+                Packet.type == 2048,
                 Packet.ip_identification.isnot(None)
             )
         ).all()

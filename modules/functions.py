@@ -95,7 +95,7 @@ class Functions():
         Returns:
             list: list of packets
         '''
-        return self.session.query(Packet).filter(
+        return self.session.query(Packet.dns,Packet.packet_timestamp).filter(
             and_(
                 Packet.id_pcap == self.id_pcap,
                 Packet.protocol == 17
@@ -159,7 +159,7 @@ class Functions():
         Returns:
             dict: dictionary of MAC addresses and their IP addresses
         '''
-        pkts = self.session.query(Packet).filter(
+        pkts = self.session.query(Packet.ip_src,Packet.ip_dst,Packet.eth_src,Packet.eth_dst).filter(
             and_(
                 Packet.id_pcap == self.id_pcap,
                 Packet.type == 2048
@@ -188,7 +188,7 @@ class Functions():
             set: set of MAC addresses
         '''
         arp_macs = []
-        pkts = self.session.query(Packet).filter(
+        pkts = self.session.query(Packet.eth_src,Packet.eth_dst).filter(
             and_(
                 Packet.id_pcap == self.id_pcap,
                 Packet.type == 2054
@@ -210,7 +210,19 @@ class Functions():
         Returns:
             dict: dictionary of TCP streams
         '''
-        packets = self.session.query(Packet).filter(
+        packets = self.session.query(
+            Packet.ip_src,
+            Packet.ip_dst,
+            Packet.tcp_flags,
+            Packet.packet_timestamp,
+            Packet.ack,
+            Packet.seq,
+            Packet.tls_ciphers,
+            Packet.is_ftp,
+            Packet.port_src,
+            Packet.port_dst,
+            Packet.tls_msg_type
+        ).filter(
             and_(
                 Packet.id_pcap == self.id_pcap,
                 Packet.type == 2048,
@@ -235,7 +247,7 @@ class Functions():
         Returns:
             set: list of DHCP IP addresses
         '''
-        packets = self.session.query(Packet).filter(and_(
+        packets = self.session.query(Packet.dhcp_yiaddr).filter(and_(
                 Packet.id_pcap == self.id_pcap,
                 Packet.dhcp_yiaddr.isnot(None)
             )
@@ -254,7 +266,7 @@ class Functions():
         Returns:
             set: list of non-DHCP IP addresses
         '''
-        packets = self.session.query(Packet).filter(and_(
+        packets = self.session.query(Packet.ip_src,Packet.ip_dst).filter(and_(
                 Packet.id_pcap == self.id_pcap,
                 Packet.dhcp_yiaddr == None
             )
@@ -276,14 +288,13 @@ class Functions():
         '''
         streams = {}
         for row in pkts:
-            if row.type == 2048:
-                if onlyTCP and row.protocol != 6:
-                    continue
-                key = (row.ip_src, row.ip_dst)
-                if key not in streams:
-                    streams[key] = [row]
-                else:
-                    streams[key].append(row)
+            if onlyTCP and row.protocol != 6:
+                continue
+            key = (row.ip_src, row.ip_dst)
+            if key not in streams:
+                streams[key] = [row]
+            else:
+                streams[key].append(row)
         return streams
     
     def get_communication_channels_triplets(self, pkts):
@@ -297,12 +308,11 @@ class Functions():
         '''
         streams = {}
         for row in pkts:
-            if row.type == 2048:
-                key = (row.ip_src, row.ip_dst, row.port_dst)
-                if key not in streams:
-                    streams[key] = [row]
-                else:
-                    streams[key].append(row)
+            key = (row.ip_src, row.ip_dst, row.port_dst)
+            if key not in streams:
+                streams[key] = [row]
+            else:
+                streams[key].append(row)
         return streams
     
     def get_protocols(self):
@@ -329,7 +339,7 @@ class Functions():
             set: set of IP addresses
         '''
         ips = []
-        packets = self.session.query(Packet).filter(
+        packets = self.session.query(Packet.ip_dst).filter(
             and_(
                 Packet.id_pcap == self.id_pcap,
                 Packet.icmp_type == 3
@@ -350,7 +360,7 @@ class Functions():
             set: set of IP addresses
         '''
         ips = []
-        packets = self.session.query(Packet).filter(
+        packets = self.session.query(Packet.ip_src,Packet.ip_dst).filter(
             and_(
                 Packet.id_pcap == self.id_pcap,
                 Packet.icmp_type == None
@@ -371,7 +381,7 @@ class Functions():
         Returns:
             dict: dictionary of streams for IP source
         '''
-        packets = self.session.query(Packet).filter(
+        packets = self.session.query(Packet.ip_src,Packet.packet_timestamp).filter(
             and_(
                 Packet.id_pcap == self.id_pcap,
                 Packet.type == 2048

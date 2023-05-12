@@ -42,7 +42,7 @@ class ApplicationLayer():
             int: number of unvisited domains
             int: number of all dns pairs
         '''
-        packets = self.session.query(Packet).filter(Packet.id_pcap == self.id_pcap).all()
+        packets = self.session.query(Packet.ip_dst).filter(Packet.id_pcap == self.id_pcap).all()
 
         all_ips = [pkt.ip_dst for pkt in packets]
 
@@ -193,7 +193,11 @@ class ApplicationLayer():
                 ip_addresses[an['answer']['rdata']].append(an['atime'])
                 
         # get all packets from the pcap file
-        pkts = self.session.query(Packet).filter(Packet.id_pcap == self.id_pcap).all()
+        pkts = self.session.query(
+            Packet.ip_src,
+            Packet.ip_dst,
+            Packet.packet_timestamp
+            ).filter(Packet.id_pcap == self.id_pcap).all()
 
         failed = 0
 
@@ -268,10 +272,16 @@ class ApplicationLayer():
             int: Number of packets with inconsistent user agent
             int: Number of all communication channels
         """
-        channels = self.functions.get_communication_channels_triplets(self.session.query(Packet).filter(
+        channels = self.functions.get_communication_channels_triplets(self.session.query(
+            Packet.ip_src,
+            Packet.ip_dst,
+            Packet.user_agent,
+            Packet.port_dst
+            ).filter(
             and_(
                 Packet.id_pcap == self.id_pcap,
-                Packet.user_agent.isnot(None)
+                Packet.user_agent.isnot(None),
+                Packet.type == 2048
             )
         ).all())
 

@@ -14,7 +14,6 @@ import logging
 import re
 import yaml
 import multiprocessing
-from tqdm import tqdm
 
 from . import statistics
 from modules import link_layer, internet_layer, transport_layer, application_layer, misc, pcapdata, db
@@ -171,6 +170,7 @@ class Detector():
             if file.endswith(".pcap") or file.endswith(".pcapng"):
                 pcaps.append(self.args.dataset_dir+'/'+file)
         self.log.debug("Found " + str(len(pcaps)) + " pcaps")
+        pcaps.sort()
         return pcaps
 
     def process_packet(self, packet, miscellaneous_mod):
@@ -178,8 +178,7 @@ class Detector():
         Process packet and check for modifications
         Args:
             packet (scapy packet): Packet to process
-            checksum_mod (Checksums): Checksums module
-            transport_layer_mod (Protocols): Protocols module
+            miscellaneous_mod (MiscellaneousModifications): MiscellaneousModifications object
 
         Returns:
             dict: Dictionary of modifications
@@ -192,7 +191,7 @@ class Detector():
             'mismatched_protocols': int(miscellaneous_mod.check_ports(packet)),
             'incorrect_packet_length': int(miscellaneous_mod.check_packet_length(packet)),
             'invalid_packet_payload': int(miscellaneous_mod.check_invalid_payload(packet)),
-            'insuficient_capture_length': int(miscellaneous_mod.check_frame_len_and_cap_len(packet)),
+            'insufficient_capture_length': int(miscellaneous_mod.check_frame_len_and_cap_len(packet)),
             'mismatched_ntp_timestamp': int(miscellaneous_mod.check_mismatched_ntp_timestamp(packet)),
         } 
 
@@ -218,12 +217,13 @@ class Detector():
         session.close()
         engine.dispose()
 
-    def process_worker(self, in_queue, shared_list):
+    def process_worker(self, in_queue, shared_dict, lock):
         '''
         Process packets in queue
         Args:
             in_queue (multiprocessing queue): Queue with packets to process
-            shared_list (list): List of processed packets
+            shared_dict (multiprocessing dict): Shared dictionary for packet modifications
+            lock (multiprocessing Lock): Lock for shared variables
 
         Returns:
             None
@@ -236,26 +236,12 @@ class Detector():
                 break
 
             processed_packet = self.process_packet(packet, miscellaneous_mod)
-            shared_list.append(processed_packet)
+            
+            with lock:
+                for key in processed_packet:
+                    shared_dict[key] += processed_packet[key]   
+
             in_queue.task_done()
-
-            # WIP
-            if False and len(shared_list) >= self.config['app']['chunk_size'] * self.config['app']['buffer_multiplier']:
-                packet_modifications = {
-                    'mismatched_checksums': 0,
-                    'mismatched_protocols': 0,
-                    'incorrect_packet_length': 0,
-                    'invalid_packet_payload': 0,
-                    'insuficient_capture_length': 0,
-                    'mismatched_ntp_timestamp': 0,
-                }
-
-                for p in shared_list:
-                    for key in packet_modifications:
-                        packet_modifications[key] += p[key]
-                
-                shared_list = []
-                shared_list.append(packet_modifications)
 
     def save_worker(self, save_queue, id_pcap, packet_count):
         '''
@@ -263,6 +249,7 @@ class Detector():
         Args:
             save_queue (multiprocessing queue): Queue with packets to save
             id_pcap (int): Id of pcap file
+            packet_count (int): Number of packets in pcap file
 
         Returns:
             None
@@ -300,7 +287,6 @@ class Detector():
         Args:
             packet_count (int): Total number of packets
             packets_processed (int): Number of packets processed
-            length_of_chunk (int): Length of chunk of packets
 
         Returns:
             None
@@ -317,16 +303,18 @@ class Detector():
                 break
             time_remaining /= multiplier
 
-        self.log.info(f"Processed {packets_processed} / {packet_count} packets. Est. time remaining: {time_remaining:.2f} {unit}")
+        print(f"Processed {packets_processed} / {packet_count} packets. Est. time remaining: {time_remaining:.2f} {unit}", end='\r')
 
-    def run_processes(self, pcap_path, id_pcap, shared_list, packet_count):
+    def run_processes(self, pcap_path, id_pcap, packet_count, shared_dict, lock):
         '''
         Manage multiprocessing, start processes and initialize queues
 
         Args:
             pcap_path (str): Path to pcap file
             id_pcap (int): Id of pcap file
-            shared_list (list): List of processed packets
+            packet_count (int): Number of packets in pcap file
+            shared_dict (multiprocessing dict): Shared dictionary for packet modifications
+            lock (multiprocessing Lock): Lock for shared variables
 
         Returns:
             None
@@ -344,7 +332,7 @@ class Detector():
         workers = []
         # Start process workers
         for i in range(num_processes):
-            process = multiprocessing.Process(target=self.process_worker, args=(in_queue, shared_list))
+            process = multiprocessing.Process(target=self.process_worker, args=(in_queue, shared_dict, lock))
             workers.append(process)
             self.log.debug("Starting process worker %d", i + 1)
             process.start()
@@ -366,7 +354,6 @@ class Detector():
             in_queue.put(None)
         save_queue.put(None)
 
-        self.log.debug("Waiting for workers to finish")
         for process in workers:
             process.join()
 
@@ -388,7 +375,7 @@ class Detector():
             'mismatched_protocols': 0,
             'incorrect_packet_length': 0,
             'invalid_packet_payload': 0,
-            'insuficient_capture_length': 0,
+            'insufficient_capture_length': 0,
             'mismatched_ntp_timestamp': 0,
 
             'missing_arp_traffic': {'failed': 0, 'total': 0},
@@ -438,15 +425,24 @@ class Detector():
         pcap_modifications, packet_modifications = self.init_modifications()
 
         manager = multiprocessing.Manager()
-        shared_list = manager.list([])
+        shared_dict = manager.dict({
+            'mismatched_checksums': 0,
+            'mismatched_protocols': 0,
+            'incorrect_packet_length': 0,
+            'invalid_packet_payload': 0,
+            'insufficient_capture_length': 0,
+            'mismatched_ntp_timestamp': 0,
+        })
 
-        self.run_processes(pcap_path, id_pcap, shared_list, packet_count)
+        lock = multiprocessing.Lock()
 
+        self.run_processes(pcap_path, id_pcap, packet_count, shared_dict, lock)
+
+        print("\nFinished processing packets")
         # acumulate results
-        for packet in tqdm(shared_list, desc="Accumulating results", unit="packets", total=packet_count):
-            for key in packet:
-                packet_modifications[key] += packet[key]
-
+        for key in ['mismatched_checksums', 'mismatched_protocols', 'incorrect_packet_length', 'invalid_packet_payload', 'insufficient_capture_length', 'mismatched_ntp_timestamp']:
+            packet_modifications[key] += shared_dict[key]
+        
         engine = create_engine(self.config['database']['engine'] + ':///' + self.config['database']['file'])
         session = sessionmaker(bind=engine)()
 

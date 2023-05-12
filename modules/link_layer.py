@@ -28,7 +28,14 @@ class LinkLayer():
             None
         '''
         self.functions =  functions.Functions(id_pcap, session)
-        self.packets = session.query(Packet).filter(Packet.id_pcap == id_pcap).all()
+        self.packets = session.query(
+            Packet.type,
+            Packet.eth_src,
+            Packet.eth_dst,
+            Packet.arp_op,
+            Packet.arp_ip_src,
+            Packet.arp_ip_dst
+            ).filter(Packet.id_pcap == id_pcap).all()
 
     def get_inconsistent_mac_maps(self):
         '''

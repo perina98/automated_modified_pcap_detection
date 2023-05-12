@@ -13,6 +13,7 @@ import json
 from scapy.all import *
 from database import Packet
 import modules.functions as functions
+from sqlalchemy import and_
 
 class TransportLayer():
     '''
@@ -32,7 +33,19 @@ class TransportLayer():
         self.config = config
         self.functions = funct
         self.streams = funct.get_tcp_streams()
-        self.channels = funct.get_communication_channels(session.query(Packet).filter(Packet.id_pcap == id_pcap).all())
+        self.channels = funct.get_communication_channels(session.query(
+            Packet.ip_src,
+            Packet.ip_dst,
+            Packet.protocol,
+            Packet.tcp_flags,
+            Packet.mss,
+            Packet.window
+            ).filter(
+            and_(
+                Packet.id_pcap == id_pcap,
+                Packet.type == 2048
+            )
+        ).all())
     
     def get_inconsistent_interpacket_gaps(self):
         '''
@@ -166,9 +179,12 @@ class TransportLayer():
                 if self.streams[stream][i].tls_msg_type == 1 and self.streams[stream][i].tls_ciphers:
                     if len(stream_ciphers['client']) > 1:
                         # compare the ciphers, the two lists should be the same, order doesn't matter
-                        if set(stream_ciphers['client']) != set(json.loads(self.streams[stream][i].tls_ciphers)):
-                            failed += 1
-                            break
+                        try:
+                            if set(stream_ciphers['client']) != set(json.loads(self.streams[stream][i].tls_ciphers)):
+                                failed += 1
+                                break
+                        except TypeError:
+                            continue
                     try:
                         stream_ciphers['client'] = list(set(stream_ciphers['client'] + json.loads(self.streams[stream][i].tls_ciphers)))
                     except TypeError:

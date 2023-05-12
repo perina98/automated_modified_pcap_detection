@@ -16,7 +16,6 @@ python 3.8 or higher with pip
 sqlalchemy v2.0.9
 scapy v2.5.0
 pyyaml v6.0
-tqdm v4.65.0
 ```
 
 In order to generate dataset you will also need the following:
@@ -32,7 +31,6 @@ These requirements are also stored in a requirements.txt file for easier install
 pip install sqlalchemy
 pip install scapy
 pip install pyyaml
-pip install tqdm
 ```
 
 Alternatively, you can just run this command that will install the requirements.
@@ -118,11 +116,9 @@ python main.py --input_pcap static/input.pcap
 
 ```
 Processing pcap: static/input.pcap
-Processed 3000 / 12000 packets. Est. time remaining: 18.01 seconds
-Processed 6000 / 12000 packets. Est. time remaining: 13.33 seconds
-Processed 9000 / 12000 packets. Est. time remaining: 6.55 seconds
 Processed 12000 / 12000 packets. Est. time remaining: 0.00 seconds
-Accumulating results: 100%|████████████████████████████████████████████████| 12000/12000 [00:01<00:00, 6143.90packets/s]
+Finished processing packets
+Accumulating results: 100%|████████████████████████████████████████| 12000/12000 [00:01<00:00, 7785.96packets/s]
 
 === Results === static/input.pcap
 
@@ -144,7 +140,7 @@ Missing ARP responses  =  6/16
 Inconsistent TTLs  =  8/238
 Inconsistent fragmentation  =  0/11716
 Sudden drops for IP source  =  15/173
-Inconsistent interpacket gaps  =  12/139
+Inconsistent interpacket gaps  =  1/139
 Incomplete tcp streams  =  73/139
 Inconsistent MSS  =  0/238
 Inconsistent window size  =  4/238
@@ -158,8 +154,8 @@ Missing DHCP IPs  =  0/1
 Missing ICMP IPs  =  0/3
 Inconsistent user agent  =  1/23
 
-Probability of modification: 30.53%
-Total time: 36.83 seconds
+Probability of modification: 29.93%
+Total time: 29.51 seconds
 ```
 
 ## Options

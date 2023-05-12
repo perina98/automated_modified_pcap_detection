@@ -37,7 +37,7 @@ class PcapData():
         Returns:
             bool: True if there are no diviations in the snaplen context False otherwise
         '''
-        packets = self.session.query(Packet).filter(Packet.id_pcap == self.id_pcap).all()
+        packets = self.session.query(Packet.length).filter(Packet.id_pcap == self.id_pcap).all()
 
         capture_context = {}
 
@@ -51,6 +51,8 @@ class PcapData():
                 capture_context[packet.length] = 1
             else:
                 capture_context[packet.length] += 1
+            if len(capture_context) > (len(packets) / 2):
+                return False
 
         # calculate relative frequency of each length
         for key in capture_context:

@@ -70,7 +70,7 @@ class Statistics():
             'mismatched_protocols': {'friendly_name': 'Mismatched protocols', 'category': 'A'},
             'incorrect_packet_length': {'friendly_name': 'Incorrect packet length', 'category': 'C'},
             'invalid_packet_payload': {'friendly_name': 'Invalid packet payload', 'category': 'B'},
-            'insuficient_capture_length': {'friendly_name': 'Insuficient capture length', 'category': 'C'},
+            'insufficient_capture_length': {'friendly_name': 'Insufficient capture length', 'category': 'C'},
             'mismatched_ntp_timestamp': {'friendly_name': 'Mismatched NTP timestamp', 'category': 'C'},
             'missing_arp_traffic': {'friendly_name': 'Missing ARP traffic', 'category': 'C'},
             'inconsistent_mac_maps': {'friendly_name': 'Inconsistent MAC maps', 'category': 'A'},
@@ -423,8 +423,9 @@ class Statistics():
 
         tree = ET.ElementTree(html)
 
-        filename = self.pcap_path + "___result.html"
-        filename = filename.replace('/', '_').replace('\\', '_').replace(':', '_').replace('*', '_').replace('?', '_')
-
+        filename = self.pcap_path
+        filename = filename.replace('.', '_').replace('/', '_').replace('\\', '_').replace(':', '_').replace('*', '_').replace('?', '_')
+        filename += "___result.html"
+        
         with open(filename, "wb") as fh:
             tree.write(fh)

@@ -1,7 +1,7 @@
 PYTHON := python
 ZIPNAME := 527341
 
-.PHONY: all dataset run_dataset source single clean install zip
+.PHONY : all dataset run_dataset source single clean install zip
 
 all : 
 	@$(MAKE) -s dataset
@@ -25,5 +25,5 @@ clean :
 	find . -name '__pycache__' -exec rm -r {} +
 install :
 	pip install -r requirements.txt
-pack: clean
+pack : clean
 	zip -r $(ZIPNAME).zip . --exclude=".git/*" --exclude="ignore/*" --exclude="./TODO"
