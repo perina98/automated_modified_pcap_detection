@@ -26,4 +26,4 @@ clean :
 install :
 	pip install -r requirements.txt
 pack : clean
-	zip -r $(ZIPNAME).zip . --exclude=".git/*" --exclude="ignore/*" --exclude="./TODO"
+	zip -r $(ZIPNAME).zip . --exclude=".git/*" --exclude="ignore/*" --exclude="thesis/*" --exclude="./.gitignore" --exclude="./TODO"

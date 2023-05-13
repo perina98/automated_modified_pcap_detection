@@ -64,6 +64,7 @@ class Database():
         Returns:
             None
         '''
+        load_layer('tls')
         # packet data structure
         pkt_data = {
             'protocol': None,

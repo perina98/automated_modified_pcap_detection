@@ -23,6 +23,7 @@ class TransportLayer():
         '''
         Constructor
         Args:
+            config (Config): configuration object
             id_pcap (int): id of the pcap file in the database
             session (mixed): database session
 
@@ -46,6 +47,32 @@ class TransportLayer():
                 Packet.type == 2048
             )
         ).all())
+
+    def __enter__(self):
+        '''
+        Enter method for 'with' block
+        Args:
+
+        Returns:
+            self: object itself
+        '''
+        return self
+    
+    def __exit__(self, exc_type, exc_value, traceback):
+        '''
+        Exit method for 'with' block
+        Args:
+            exc_type (mixed): exception type
+            exc_value (mixed): exception value
+            traceback (mixed): traceback
+
+        Returns:
+            None
+        '''
+        del self.functions
+        del self.streams
+        del self.channels
+        return
     
     def get_inconsistent_interpacket_gaps(self):
         '''

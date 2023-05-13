@@ -22,6 +22,7 @@ class ApplicationLayer():
         '''
         Constructor
         Args:
+            config (dict): configuration dictionary
             id_pcap (int): id of the pcap file in the database
             session (mixed): database session
 
@@ -32,6 +33,31 @@ class ApplicationLayer():
         self.session = session
         self.functions =  functions.Functions(id_pcap, session, config)
         self.dns_pairs = self.functions.get_dns_pairs()
+
+    def __enter__(self):
+        '''
+        Enter method for 'with' block
+        Args:
+
+        Returns:
+            self: object itself
+        '''
+        return self
+    
+    def __exit__(self, exc_type, exc_value, traceback):
+        '''
+        Exit method for 'with' block
+        Args:
+            exc_type (mixed): exception type
+            exc_value (mixed): exception value
+            traceback (mixed): traceback
+
+        Returns:
+            None
+        '''
+        del self.functions
+        del self.dns_pairs
+        return
 
     def get_translation_of_unvisited_domains(self):
         '''

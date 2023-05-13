@@ -22,6 +22,7 @@ class InternetLayer():
         '''
         Constructor
         Args:
+            config (Config): configuration object
             id_pcap (int): id of the pcap file in the database
             session (mixed): database session
 
@@ -32,6 +33,30 @@ class InternetLayer():
         self.session = session
         self.config = config
         self.functions =  functions.Functions(id_pcap, session)
+
+    def __enter__(self):
+        '''
+        Enter method for 'with' block
+        Args:
+
+        Returns:
+            self: object itself
+        '''
+        return self
+    
+    def __exit__(self, exc_type, exc_value, traceback):
+        '''
+        Exit method for 'with' block
+        Args:
+            exc_type (mixed): exception type
+            exc_value (mixed): exception value
+            traceback (mixed): traceback
+
+        Returns:
+            None
+        '''
+        del self.functions
+        return
 
     def get_inconsistent_ttls(self):
         '''

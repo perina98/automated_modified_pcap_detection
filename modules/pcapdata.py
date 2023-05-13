@@ -28,7 +28,30 @@ class PcapData():
         '''
         self.id_pcap = id_pcap
         self.session = session
+
+    def __enter__(self):
+        '''
+        Enter method for 'with' block
+        Args:
+
+        Returns:
+            self: object itself
+        '''
+        return self
     
+    def __exit__(self, exc_type, exc_value, traceback):
+        '''
+        Exit method for 'with' block
+        Args:
+            exc_type (mixed): exception type
+            exc_value (mixed): exception value
+            traceback (mixed): traceback
+
+        Returns:
+            None
+        '''
+        return
+        
     def check_snaplen_context(self, pcap_snaplen_limit):
         '''
         Check if there are no diviations in the snaplen context

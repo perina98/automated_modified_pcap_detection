@@ -118,7 +118,6 @@ python main.py --input_pcap static/input.pcap
 Processing pcap: static/input.pcap
 Processed 12000 / 12000 packets. Est. time remaining: 0.00 seconds
 Finished processing packets
-Accumulating results: 100%|████████████████████████████████████████| 12000/12000 [00:01<00:00, 7785.96packets/s]
 
 === Results === static/input.pcap
 

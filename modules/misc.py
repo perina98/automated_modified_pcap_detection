@@ -21,6 +21,7 @@ class Miscellaneous():
         '''
         Constructor
         Args:
+            config (Config): configuration object
 
         Returns:
             None
@@ -28,6 +29,7 @@ class Miscellaneous():
         self.protocols = functions.Functions().get_protocols()
         self.snaplen_context = []
         self.config = config
+        load_layer('tls')
 
     def check_ports(self, packet):
         '''

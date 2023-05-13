@@ -17,10 +17,16 @@ class Statistics():
     '''
     Class for handling results of modification detections and statistics
     '''
-    def __init__(self, pcap_path, packet_count, pcap_modifications, packet_modifications, start_time, misc_tests):
+    def __init__(self, pcap_path, packet_count, pcap_modifications, packet_modifications, start_time, config):
         '''
         Initialize the class
         Args:
+            pcap_path: path to the pcap file
+            packet_count: number of packets in the pcap file
+            pcap_modifications: dict of pcap modifications
+            packet_modifications: dict of packet modifications
+            start_time: start time of the detection
+            config: configuration
 
         Returns:
         '''
@@ -28,12 +34,13 @@ class Statistics():
         self.packet_count = packet_count
         self.pcap_modifications = pcap_modifications
         self.packet_modifications = packet_modifications
-        self.misc_tests = misc_tests
+        self.config = config
+        self.misc_tests = config['tests']['misc']
         self.time = self.get_total_time(start_time)
         self.function_context = self.get_function_context()
 
         avg = self.get_weighted_average()
-        self.probability = self.get_probability(avg)
+        self.probability = self.get_probability(avg) if avg != 0 else 0
 
     def get_total_time(self, start_time):
         '''
@@ -115,7 +122,7 @@ class Statistics():
     
     def get_weighted_average(self):
         '''
-        Calculate probability of modification
+        Calculate weighted average based on weights and categories
         Args:
 
         Returns:
@@ -128,25 +135,29 @@ class Statistics():
             'D': 20,
         }
         total_weight = 0
-        probability = 0.00
+        wa = 0.00
 
-        for key, value in self.pcap_modifications.items():
-            probability += int(value) * weights[self.function_context[key]['category']]
-            total_weight += weights[self.function_context[key]['category']]
+        if self.config['tests']['pcap']:
+            for key, value in self.pcap_modifications.items():
+                wa += int(value) * weights[self.function_context[key]['category']]
+                total_weight += weights[self.function_context[key]['category']]
 
         for key, value in self.packet_modifications.items():
             if type(value) is dict:
                 if value['total'] == 0:
                     continue
-                probability += (value['failed'] / value['total']) * weights[self.function_context[key]['category']]
+                wa += (value['failed'] / value['total']) * weights[self.function_context[key]['category']]
             else:
                 if not self.misc_tests:
                     continue 
-                probability += (value / self.packet_count) * weights[self.function_context[key]['category']]
+                wa += (value / self.packet_count) * weights[self.function_context[key]['category']]
 
             total_weight += weights[self.function_context[key]['category']]
 
-        avg = (probability / total_weight) * 100
+        if total_weight == 0:
+            return 0
+        
+        avg = (wa / total_weight) * 100
         return round(avg, 2)
 
     def print_results(self):

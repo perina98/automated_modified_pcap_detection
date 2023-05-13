@@ -36,6 +36,31 @@ class LinkLayer():
             Packet.arp_ip_src,
             Packet.arp_ip_dst
             ).filter(Packet.id_pcap == id_pcap).all()
+        
+    def __enter__(self):
+        '''
+        Enter method for 'with' block
+        Args:
+
+        Returns:
+            self: object itself
+        '''
+        return self
+    
+    def __exit__(self, exc_type, exc_value, traceback):
+        '''
+        Exit method for 'with' block
+        Args:
+            exc_type (mixed): exception type
+            exc_value (mixed): exception value
+            traceback (mixed): traceback
+
+        Returns:
+            None
+        '''
+        del self.functions
+        del self.packets
+        return
 
     def get_inconsistent_mac_maps(self):
         '''

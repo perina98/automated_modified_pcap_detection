@@ -25,6 +25,7 @@ class Functions():
         Args:
             id_pcap (int): id of the pcap file in the database
             session (mixed): database session
+            config (dict): configuration
 
         Returns:
             None
@@ -116,6 +117,8 @@ class Functions():
         for pkt in pkts:
             if pkt.dns:
                 dns = json.loads(pkt.dns)
+                if dns['id'] == 0:
+                    continue
                 if dns['id'] not in pairs:
                     pairs[dns['id']] = {}
                 if dns['an']:
