@@ -34,6 +34,7 @@ class Detector():
         Initialize the detector
         Initialize database, logging and load layers
         Args:
+            args (mixed): arguments from argparse
 
         Returns:
             None
