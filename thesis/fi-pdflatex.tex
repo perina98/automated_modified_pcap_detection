@@ -109,17 +109,14 @@
 
 \chapter{Introduction}
 
-The purpose of this thesis is to research the topic of a network traffic capture analysis, the possibilities to manipulate the packet captures, and to design and implement an application that will be able to detect modifications made to the packet captures. Currently, the research on this topic is not widely spread because most topics talk about live traffic scanning~\cite{ABBASI202119}. This work concentrates on network packet trace analysis and aims to develop an application that will attempt to detect changes made to these offline packet traces.
+The purpose of this thesis is to research the topic of a network traffic capture analysis, the strategies to manipulate the packet captures, and to design and implement an application that will be able to detect modifications made to the packet captures. The research on the specific topic addressed in this thesis is not widely available, as most existing literature predominantly focuses on live traffic scanning~\cite{ABBASI202119}. This work focuses on network packet trace analysis and aims to develop an application that will attempt to detect changes made to these offline packet traces.
 
 The modifications made to the network packet traces might be done by the attacker in order to hide the traces left after his malicious act. Since the packet captures could be used as evidence during a~forensic analysis, these files must be protected, and their integrity has to be ensured. There also needs to be a~way to determine the originality of the file and to ensure that the file was not modified. This is where the proposed solution might bring more light to this topic. Detecting such changes is not an easy task, and the detection might be influenced by various properties. These might range from the skill of an attacker modifying the packet trace to the complexity of the network and the nonstandard behavior of some of the network components.
 
 The importance of protecting the network packet capture integrity is escalated by the fact that the ever-growing number of networks is acting as a~bigger and bigger target for attackers and malicious acts. These might include personal information stealing or targeting specific networks in order to gain access to network resources.
 
-The first part of the work in Chapter \ref{chap:ntc} introduces the reader to the world of network traffic capture. It also describes available monitoring strategies, as well as the challenges and underlying network protocols, which are deeply analyzed. The following Chapter \ref{chap:modif} analyses the possibilities to modify the network captures traces, the tools available to do so, and the associated risks with such modifications.
+The first part of the work in Chapter \ref{chap:ntc} introduces the reader to the world of network traffic capture. It also describes available monitoring strategies, as well as the challenges and underlying network protocols, which are deeply analyzed. The following Chapter \ref{chap:modif} analyzes the strategies to modify the network captures traces, the tools available to do so, and the associated risks with such modifications.
 Chapter \ref{chap:mdm} discusses modification detection methods. The description of these methods comes from live traffic analysis. Still, their core principle also applies to packet capture trace analysis, and they form a~great knowledge base for further development. In Chapter \ref{chap:desimp}, the design and implementation of the proposed application are discussed. The application's requirements, architecture, and structure are described in detail. The proposed detection methods are also described in this Chapter. Finally, Chapter \ref{chap:testing} describes how application testing was conducted, with the tests performed and results discussed at the end of this Chapter.
-
-
-
 
 
 \newpage
@@ -138,7 +135,7 @@ When performing the network capture, there are two main schemes of capturing the
 
 \paragraph{Active monitoring} operates on a~unique principle~\cite{landfeldt2000case}. By inserting probes into the network, it is able to monitor and gather information about a~given network, like bandwidth, round trip delays, or network speed. Bottlenecks can be detected by using a~back-to-back technique or packet-pair probing. To estimate the bandwidth available, the active monitoring generates traffic and uses ICMP echo packets to get this information. This type of monitoring is considered highly accurate. However, it competes for network resources. This huge disadvantage means it has a~high impact on the network and is therefore not recommended for crucial networks which can be negatively affected.
 
-\paragraph{Passive monitoring} is the most common type of network traffic capture. It overcomes the disadvantages of active schemes by passively monitoring streams of data~\cite{Messier2017-fz}. To do this effectively, they infer the current network status and the information about the network in such a~way that they do not need to introduce new traffic to the network in order to gather those pieces of information. Passive monitoring is often done through SPAN port or via network tap:
+\paragraph{Passive monitoring} is the most common type of network traffic capture. It overcomes the disadvantages of active schemes by passively monitoring streams of data~\cite{Messier2017-fz}. To do this effectively, they infer the current network status and the information about the network in such a~way that they do not need to introduce new traffic to the network in order to gather those pieces of information. Passive monitoring is often done through a SPAN port or via network TAP:
 
 \begin{itemize}
     \item a~\textbf{TAP(Test Access Point)} refers to a~hardware device that is used to monitor network traffic passively. A~TAP is inserted between two network devices, such as a~router and a~switch, to essentially intercept and copy any traffic flowing through them. It copies all traffic passing through, regardless of the port that the traffic is coming from or going to. This makes it a~complete monitoring solution. TAPs are used in situations where it is important to capture all network traffic for security reasons or compliance auditing.
@@ -149,15 +146,15 @@ When performing the network capture, there are two main schemes of capturing the
 
 To capture the traffic, we monitor the network and save each packet that flows through it. The network packet represents a~chunk of data sent over a~network between two devices at either end of the communication channel~\cite{PacketMD39:online}. There are generally two main components, user data and control information. The former is commonly known as \textit{payload} and carries the data from one device to another. The latter is the information critical for delivering the payload. This consists of network addresses, sequencing information, and error detection codes. This information is found in the packet's \textit{header} and its \textit{footer}. 
 
-Control information should always contain specific information based on what type of packet is currently used. There are many packet layers, each containing information specific to that layer. Some of the most common network packet layers are the following:
+Control information should always contain specific information based on what type of packet is currently used. There are many packet layers and protocols, each containing information specific to that layer. Some of the most common network packet protocols are the following:
 
 \begin{itemize}
-    \item Ethernet layer: specifies electrical and optical properties,
-    \item IP layer: used for communication between different networks, including the Internet,
-    \item TCP layer: used for reliable data transmission between devices over the networks.
+    \item Ethernet protocol: specifies electrical and optical properties,
+    \item Internet protocol: used for communication between different networks, including the Internet,
+    \item Transmission control protocol: used for reliable data transmission between devices over the networks.
 \end{itemize}
 
-However, considering the nature of the internet and the everlasting continuous exponential growth of demand for new applications, there are many more types used in networking depending on the application used.
+However, considering the nature of the Internet and the everlasting continuous exponential growth of demand for new applications, there are many more types used in networking depending on the application used.
 
 The TCP/IP model, as shown in Figure \ref{fig:tcpipmodel}, consists of 4 layers, compared to ISO/OSI with seven layers. The strength of the ISO/OSI model is, in fact, the model itself, which is extraordinarily useful when learning about computer networks~\cite{10.5555/2584507}. On the other hand, TCP/IP model helps us understand the protocols more directly. The protocols are an important part of this thesis, and this model provides a~clear representation of where they belong. Attackers may use this knowledge to hide malicious data based on the network layer protocol.
 
@@ -174,7 +171,7 @@ The TCP/IP model, as shown in Figure \ref{fig:tcpipmodel}, consists of 4 layers,
 \begin{itemize}
     \item \textbf{The Link Layer:} TCP/IP model does not directly mention the physical layer. Instead, it now concentrates on how to send messages directly between computers using either Ethernet or 802.11 protocols on the \textbf{Link layer}.
 
-    \item \textbf{The Internet Layer:} Holding the whole architecture together, the Internet Layer of the TCP/IP model roughly corresponds to ISO/OSI network layer. Its main purpose is to allow hosts to send packets into any network on the Internet and have them travel independently on each other. This layer defines an official packet format called IP (Internet Protocol) and a~companion protocol called ICMP (Internet Control Message Protocol) that cooperates directly with the IP. Together, their job is to deliver packets to the destination.
+    \item \textbf{The Internet Layer:} Holding the whole architecture together, the Internet Layer of the TCP/IP model roughly corresponds to ISO/OSI network layer. Its main purpose is to allow hosts to send packets into any network on the Internet and have them travel independently from each other. This layer defines an official packet format called IP (Internet Protocol) and a~companion protocol called ICMP (Internet Control Message Protocol) that cooperates directly with the IP. Together, their job is to deliver packets to the destination.
 
     \item \textbf{The Transport Layer} is the layer above the Internet Layer in the TCP/IP model. Just as in ISO/OSI model, it is designed to allow two devices to communicate. There have been two major protocols that were defined in this layer. These are TCP (Transmission Control Protocol) and UDP (User Datagram Protocol).
 
@@ -209,7 +206,7 @@ PCAP file format is still commonly used. However, it is slowly being replaced by
 
 \subsection{PcapNG}
 
-The PcapNG file format~\cite{PcapNg85:online}, which stands for PCAP Next Generation, is a~newer capture file format designed to overcome multiple limitations of the original PCAP. These limitations include the inability to store packets with different link layers and many others. It is also more flexible, supporting advanced features such as capturing metadata, custom block types, and multiple interfaces in a~single file. It also has better support for timestamp precision, which is one billionth of a~second, compared to Pcap with just one-millionth of a~second. It allows for comments, annotations, and other data to be attached to packets. Data structures are designed for storing metadata such as hostnames, even encryption keys, and much more. 
+The PcapNG file format~\cite{PcapNg85:online}, which stands for PCAP Next Generation, is a~newer capture file format designed to overcome multiple limitations of the original PCAP. These limitations include the inability to store packets with different link layers and many others. It is also more flexible, supporting advanced features such as capturing metadata, custom block types, and multiple interfaces in a~single file. It also has better support for timestamp precision, which is one billionth of a~second, compared to Pcap, with just one millionth of a~second. It allows for comments, annotations, and other data to be attached to packets. Data structures are designed for storing metadata such as hostnames, even encryption keys, and much more. 
 
 It became the default save-file format for Wireshark in 2012, which has been the main reason many people and companies switched over to it. Despite this fact, PCAP is still more widely used across many industries.
 
@@ -271,7 +268,7 @@ tshark -i eth0 -w capture.pcap
 
 \section{Challenges of data capture}
 
-While capturing digital data, there are many challenges that we first need to think about in order to account for them while gathering the data. When not thought about deeply, some of these challenges may actually cause more harm than one could imagine. That is why it is very important to make sure we understand them. It is important to understand the principles of network monitoring and the network itself to identify these challenges. We must also think about the challenges from a packet trace manipulation perspective, and understand the implications that the packet trace manipulation brings.
+While capturing digital data, there are many challenges that we first need to think about in order to account for them while gathering the data. When not thought about deeply, some of these challenges may actually cause more harm than one could imagine. That is why it is very important to make sure we understand them. It is important to understand the principles of network monitoring and the network itself to identify these challenges. We must also think about the challenges from a packet trace manipulation perspective and understand the implications that packet trace manipulation brings.
 
 \subsection{New protocols}
 
@@ -284,7 +281,7 @@ One of the protocols that have the potential to change the way we think about ne
 \begin{itemize}
     \item \textbf{Encryption} By design, all data that are transferred using QUIC protocol are always encrypted. This means that while packet capture is still without significant problems, further analysis is complicated, impossible, or requires decryption algorithms. It might also mean that some data will never be recovered at all. This can be used to hide malicious acts in packet traces by manipulating the payloads of the packets.
     \item \textbf{Support} QUIC is relatively new, which means it is not supported by many applications and hardware. This opens security holes and could be used by attackers. Many network monitoring solutions work with HTTP and HTTPS traffic transferred over TCP or TCP+TLS protocols and might not yet understand QUIC. Modification detection software might not be ready for these types of attacks.
-    \item \textbf{Versions} There are many different versions of QUIC on the internet, making network monitoring difficult. In order to monitor the protocol, we need to know the exact specifications of the given version. If there are many versions, it might not be possible to do it effectively.
+    \item \textbf{Versions} There are many different versions of QUIC on the Internet, making network monitoring difficult. In order to monitor the protocol, we need to know the exact specifications of the given version. If there are many versions, it might not be possible to do it effectively.
 \end{itemize}
 
 \subsection{Storing the data for further analysis}
@@ -305,7 +302,7 @@ Because this thesis focuses on offline monitoring and relies on packet captures,
 
 \item \textbf{Usage of nonstandard ports:} It is also quite common for many applications and software to use nonstandard ports for communication. According to Internet Assigned Numbers Authority (IANA), there should be standard and nonstandard ports that should or should not be used by any given application\footnote{\url{https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.xhtml}}. However, it does not prohibit any application to use any port it desires, as long as it is open and free to use. This means that we can not rely completely on this list alone.
 
-\item \textbf{Packet loss:} Packet loss is something that is quite common on networks~\cite{4594875}. It might occur even on healthy networks and is part of the internet. SPAN ports can be overloaded and thus not forward any more data. The data-capturing device might also be overloaded. In case of overloading, capturing does not behave in a~predictable way and might therefore lead to packet loss. We must account for that and take it as it is since it is considered normal behavior.
+\item \textbf{Packet loss:} Packet loss is something that is quite common on networks~\cite{4594875}. It might occur even on healthy networks and is part of the Internet. SPAN ports can be overloaded and thus not forward any more data. The data-capturing device might also be overloaded. In case of overloading, capturing does not behave in a~predictable way and might therefore lead to packet loss. We must account for that and take it as it is since it is considered normal behavior.
 
 Losing packets is something that can occur on wired networks as well as on wireless ones. However, it is much more common for it to occur on wireless networks because there is much more interference and other crucial factors that allow this.
 
@@ -343,7 +340,7 @@ MAC stands for media access control. It represents a~sublayer of the Link layer 
 \end{itemize}
 
 \bigskip
-Addressing in the MAC sublayer is done using a~MAC address. a~MAC address is a~link-layer address that is sometimes also called a~LAN address or a~physical address. And because it is managed by IEEE, it is guaranteed that there are no collisions worldwide. That is because it is embedded in the hardware of the networking card itself. MAC address is 6 bytes long and typically expressed in hexadecimal notation.
+Addressing in the MAC sublayer is done using a~MAC address. A~MAC address is a~link-layer address that is sometimes also called a~LAN address or a~physical address. And because it is managed by IEEE, it is guaranteed that there are no collisions worldwide. That is because it is embedded in the hardware of the networking card itself. A~MAC address is 6 bytes long and typically expressed in hexadecimal notation.
 
 By design, no two adapters or network cards have the same MAC address. However, the MAC address can still be edited by the end user. Example of MAC address:
 
@@ -410,9 +407,9 @@ ARP packet structure is described in RFC 826~\cite{RFC0826}. It specifies the AR
     \item \textbf{Hw Addr Len}: An 8-bit field that specifies the length of each hardware address in bytes.
     \item \textbf{Prot Addr Len}: An 8-bit field that specifies the length of each protocol address in bytes.
     \item \textbf{Opcode}: A~16-bit field that indicates whether the ARP packet is a~request or a~response.
-    \item \textbf{Sender MAC Address}: The MAC address of the device sending the ARP packet.
+    \item \textbf{Sender hardware Address}: The hardware address of the device sending the ARP packet.
     \item \textbf{Sender Protocol Address}: The IP address of the device sending the ARP packet.
-    \item \textbf{Target MAC Address}: The MAC address of the device to which the ARP packet is being sent.
+    \item \textbf{Target hardware Address}: The hardware address of the device to which the ARP packet is being sent.
     \item \textbf{Target Protocol Address}: The IP address of the device that the ARP packet is being sent to.
 \end{itemize}
 
@@ -509,7 +506,7 @@ The format~\cite{RFC2460} of the Internet Header shown in Figure \ref{fig:ipv6_h
     \item \textbf{Traffic Class}: An 8-bit field that provides QoS (Quality of Service) and ECN (Explicit Congestion Notification) information.
     \item \textbf{Flow Label}: A~20-bit field that identifies a~flow of packets that requires special handling.
     \item \textbf{Payload Length}: A~16-bit field specifying the payload length (data) in the packet, excluding the header.
-    \item \textbf{Next Header}: An 8-bit field that identifies the protocol used in the data portion of the packet.
+    \item \textbf{Next Header}: An 8-bit field that identifies the type of header used in the data portion of the packet.
     \item \textbf{Hop Limit}: An 8-bit field specifying the maximum number of hops the packet can take before being discarded.
     \item \textbf{Source Address}: A~128-bit field specifying the IP address of the packet's sender.
     \item \textbf{Destination Address}: A~128-bit field that specifies the IP address of the intended recipient of the packet.
@@ -584,9 +581,8 @@ The structure of the ICMPv4 packet is shown in Figure \ref{fig:icmp}
     \item \textbf{Type}: Specifies the type of message, such as Echo Request or Destination Unreachable.
     \item \textbf{Code}: Provides additional information about the message type, such as a~specific error condition.
     \item \textbf{Checksum}: Provides error-checking for the ICMPv4 message.
-    \item \textbf{Identifier}: A~16-bit identifier that can be used to match requests and replies.
-    \item \textbf{Sequence Number}: A~16-bit number that can be used to match requests and replies.
-    \item \textbf{Message Body}: Contains additional information about the message, such as an error message or the payload of an Echo Request/Reply message.
+    \item \textbf{Message Body}: Contains additional information about the message, such as an error message or the payload of an Echo Request/Reply message. In the case of an Echo message, these can include sequence numbers to match requests and replies, and identifiers. The general format shows the message body in Figure \ref{fig:icmp}, however, this varies based on the type of an ICMP. This directly influences the contents of the message body.
+    
 \end{itemize}
 
 There are many different messages that ICMP can send. Some of the common types are the following~\cite{10.5555/2584507}:
@@ -648,9 +644,8 @@ TCP header, when compared to UDP, is much more complex. Notable are the several 
     \item \textbf{Sequence Number}: a~32-bit field specifying the sequence number of the first data byte in the TCP segment.
     \item \textbf{Acknowledgment Number}: a~32-bit field that specifies the sequence number of the next expected data byte in the TCP segment.
     \item \textbf{Data Offset}: a~4-bit field specifying the length of the TCP header in 32-bit words.
-    \item \textbf{Reserved}: a~3-bit field reserved for future use.
-    \item \textbf{NS}: a~1-bit flag that is used for ECN (Explicit Congestion Notification).
-    \item \textbf{Control Flags}: a~9-bit field containing various control flags such as SYN, ACK, RST, etc.
+    \item \textbf{Reserved}: a~6-bit field reserved for future use.
+    \item \textbf{Control Flags}: a~6-bit field containing various control flags such as SYN, ACK, RST, etc.
     \item \textbf{Window Size}: a~16-bit field that specifies the size of the receive window.
     \item \textbf{Checksum}: a~16-bit field that provides error-checking for the TCP segment.
     \item \textbf{Urgent Pointer}: a~16-bit field that communicates the offset from the current sequence number of the last urgent data byte.
@@ -670,9 +665,9 @@ TCP header, when compared to UDP, is much more complex. Notable are the several 
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
    |                    Acknowledgment Number                      |
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   |  Data |       |C|E|U|A|P|R|S|F|                               |
-   | Offset| Rsrvd |W|C|R|C|S|S|Y|I|            Window             |
-   |       |       |R|E|G|K|H|T|N|N|                               |
+   |  Data |           |U|A|P|R|S|F|                               |
+   | Offset|   Rsrvd   |R|C|S|S|Y|I|            Window             |
+   |       |           |G|K|H|T|N|N|                               |
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
    |           Checksum            |         Urgent Pointer        |
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -688,7 +683,7 @@ TCP header, when compared to UDP, is much more complex. Notable are the several 
   \label{fig:tcp}
 \end{figure}
 
-TCP is one of the most widely used protocols for transmitting data over networks, and it is essential for the functioning of the Internet as we know it today~\cite{10.5555/2584507}. At the beginning of the Internet, TCP played a crucial role in enabling reliable communication between different computer systems. Its importance cannot be overstated, as it laid the foundation for the global connectivity and communication we experience today.
+TCP is one of the most widely used protocols for transmitting data over networks, and it is essential for the functioning of the Internet as we know it today~\cite{10.5555/2584507}. At the beginning of the Internet, TCP played a crucial role in enabling reliable communication between different computer systems.
 
 \subsubsection{QUIC}
 
@@ -700,19 +695,19 @@ The QUIC(Quick UDP Internet Connections)~\cite{RFC9000} protocol is a~transport 
     \item \textbf{Congestion control}: QUIC uses congestion control algorithms to avoid network congestion.
 \end{itemize}
 
-QUIC also implements \textbf{connection migration}. That means it is able to migrate a~connection from one IP to another. This proves to be significantly important in mobile devices, which tend to switch between cellular and WiFi networks. This protocol also comes with features like \textbf{0-RTT} or 0 Round Trip Time, which allows hosts to send data even before the connection is fully established, further reducing overhead and latency.
+QUIC also implements \textbf{connection migration}. That means it is able to migrate a~connection from one IP to another. This proves to be significantly important in mobile devices, which tend to switch between cellular and WiFi networks. This protocol also comes with features like \textbf{0-RTT} or 0 Round Trip Time, which allows hosts to send data even before the connection is fully established, further reducing overhead and latency. The Long Header packet looks like this:
 
 \begin{itemize}[noitemsep,topsep=0pt]
-    \item \textbf{Header Form (1 bit):} Indicates whether the header is a~long header (0) or a~short header (1).
+    \item \textbf{Header Form (1 bit):} Indicates whether the header is a~long header or a~short header.
     \item \textbf{Fixed Bit (1 bit):} Always set to 1 to indicate that the packet is a~QUIC packet.
+    \item \textbf{Long Packet Type (2 bits):} The packet type.
+    \item \textbf{Type-Specific Bits (4 bits):} Semantics determined by packet type.
     \item \textbf{Version (32 bits):} The version of the QUIC protocol being used.
     \item \textbf{Destination Connection ID Length (8 bits):} The length of the destination connection ID.
     \item \textbf{Source Connection ID Length (8 bits):} The length of the source connection ID.
-    \item \textbf{Packet Number Length (2 bits):} The length of the packet number in bytes.
-    \item \textbf{Reserved Bits (2 bits):} Reserved for future use and set to 0.
-    \item \textbf{Packet Number (variable length):} The packet number for this packet.
     \item \textbf{Destination Connection ID (variable length):} The ID of the destination connection.
     \item \textbf{Source Connection ID (variable length):} The ID of the source connection.
+    
     \item \textbf{Payload (variable length):} The payload data of the packet.
 \end{itemize}
 
@@ -726,11 +721,11 @@ The application layer is the topmost layer in the TCP/IP reference model~\cite{1
 
 The application layer includes a~wide range of services and protocols spanning from web browsers to email clients or instant messaging applications. Some more examples of application layer protocols are SMTP, used to send emails, FTP for file transfers, or Telnet.
 
-I will now cover the most important services and protocols from the application layer that are essential for this thesis.
+The most important services and protocols from the application layer that are essential for this thesis will now be covered.
 
 \subsubsection{HTTP and HTTPS}
 
-\textbf{HTTP(Hypertext Transfer Protocol)} is a~protocol responsible for handling communication between web servers and web browsers. It is the fundamental part of data communication on the World Wide Web and defines the syntax and semantics of messages exchanged between web servers and clients. HTTP was defined in RFC 1945 and RFC 2616 respectively. It is implemented in two programs: client and server. These programs then talk to each other by exchanging HTTP messages.
+\textbf{HTTP(Hypertext Transfer Protocol)} is a~protocol responsible for handling communication between web servers and web browsers. It is the fundamental part of data communication on the World Wide Web and defines the syntax and semantics of messages exchanged between web servers and clients. HTTP was defined in RFC 1945\footnote{\url{https://datatracker.ietf.org/doc/html/rfc1945}} and RFC 2616\footnote{\url{https://datatracker.ietf.org/doc/html/rfc2616}} respectively. It is implemented in two programs: client and server. These programs then talk to each other by exchanging HTTP messages.
 
 \medskip
 
@@ -748,7 +743,7 @@ In itself, HTTP is a~stateless protocol, meaning each request message is indepen
 
 \textbf{HTTPS(Hypertext Transfer Protocol Secure)}~\cite{10.5555/2584507} came shortly after HTTP. It represents a~secure version of HTTP. The difference is HTTPS uses SSL(Secure Socket Layer) or TLS(Transport Layer Security) encryption to create a~secure connection between a~web browser and a~server. This then ensures that any data transmitted between these communicating parties are encrypted. In itself, HTTPS works simply as HTTP. It uses TLS for the transmission rather than HTTP, which uses TCP~\cite{RFC2818}. In contrast, HTTP uses no encryption and sends data in plaintext.
 
-HTTPS is, therefore, much more secure and slowly becoming standard for all websites on the internet. It is crucial for Internet banking applications or e-shops that use private banking data. This also significantly impacts network monitoring, as monitoring encrypted traffic brings many challenges.
+HTTPS is, therefore, much more secure and slowly becoming standard for all websites on the Internet. It is crucial for Internet banking applications or e-shops that use private banking data. This also significantly impacts network monitoring, as monitoring encrypted traffic brings many challenges.
 
 \subsubsection{DHCP}
 
@@ -762,7 +757,7 @@ DHCP is, therefore, a~mechanism that allows devices to simplify configuration on
 
 \subsubsection{DNS}
 \label{sec:dns}
-In order to identify hosts on the network, we use IP addresses. However, remembering these can be a~tremendous task. Just like telephone directories, the internet uses its own directory service called DNS(Domain Name System). It is a~system that translates domain names such as www.example.com into IP addresses. Computers can not understand domain names directly, so the domain names must be translated using a~DNS server. a~DNS server is a~specific type of server that handles these types of requests.
+In order to identify hosts on the network, we use IP addresses. However, remembering these can be a~tremendous task. Just like telephone directories, the Internet uses its own directory service called DNS(Domain Name System). It is a~system that translates domain names such as www.example.com into IP addresses. Computers can not understand domain names directly, so the domain names must be translated using a~DNS server. A~DNS server is a~specific type of server that handles these types of requests.
 
 When a~user enters a~domain name in a~web browser, the browser sends a~DNS query to a~DNS server to resolve the domain name into an IP address. The DNS server looks up the domain name in its database. If the name is found, it takes the associated IP address and returns it to the server. If it is not found, it forwards the query to another server. Once the IP address is received, the browser initiates a~TCP connection to the HTTP server process located at port 80.
 
@@ -811,7 +806,7 @@ This chapter will explore the techniques and tools available to modify captured 
 
 \section{Data manipulation}
 \label{sec:manipul}
-Data manipulation is a~technique that involves altering the captured network data, often for malicious purposes~\cite{Messier2017-fz}. This is the way attackers use to hide malicious activity and make their identification more difficult. It is important to consider the impacts of such manipulation from a~forensic analysis perspective. Attackers might try to manipulate existing packet captures and either corrupt the file, remove the traces or introduce misleading clues, which would make identifying the attacker or malicious activity harder or impossible. In general, it is possible to distinguish between four main methods to manipulate network data.
+Data manipulation is a~technique that involves altering the captured network data, often for malicious purposes~\cite{Messier2017-fz}. This is the way attackers use to hide malicious activity and make their identification more difficult. It is important to consider the impacts of such manipulation from a~forensic analysis perspective. Attackers might try to manipulate existing packet captures and either corrupt the file, remove the traces, or introduce misleading clues, which would make identifying the attacker or malicious activity harder or impossible. In general, it is possible to distinguish between four main methods to manipulate network data.
 
 \paragraph{Packet injection} involves introducing packets into the packet capture file that were not previously present in the original capture. By doing so, attackers introduce false clues or traces. They may also try to make the malicious activity look normal or to flood the capture file with unnecessary packets that would just make the file bigger and, therefore, harder to work with. Attackers may try to introduce packets that indicate visiting domains that were not previously translated using DNS service, which was described in Section \ref{sec:dns}. They might also introduce HTTP traffic while forgetting about requests for external sources like Javascript and CSS. While manipulating the capture file, it is possible that attackers will not pay as much attention to detail in less relevant things like cipher suite lists in TLS connections described in Section \ref{chap:tcp}, window sizes for given IP addresses, and also the timing of the packets. Even if the attackers do pay attention to detail here, they might forget about ARP and the IP addresses it uses. Having an IP address in either ARP or non-ARP traffic means it should also be present in the other one. ARP was described in Section \ref{sec:arp}.
 
@@ -838,7 +833,7 @@ Currently, there are many tools that allow us to manipulate packet traces either
 
 \section{Available tools}
 
-In order to manipulate packet capture and packets themselves, we can divide the manipulation process by how we interact with the packets. We can either edit the packets on a~byte level by manually changing the binary or hex values of the packet, we can also use GUI editors, command line tools, or programming libraries. All of these have a~specific purpose and offer different functionality~\cite{Howcanne5:online}.
+In order to manipulate packet capture and packets themselves, we can divide the manipulation process by how we interact with the packets. We can either edit the packets on a~byte level by manually changing the binary or hex values of the packet. We can also use GUI editors, command line tools, or programming libraries. All of these have a~specific purpose and offer different functionality~\cite{Howcanne5:online}.
 
 \subsection{Editing hex values}
 
@@ -953,7 +948,7 @@ Packet capture files can often serve as a~piece of evidence for malicious acts. 
 
 \section{Prevention and impact}
 
-It is important to think about the prevention of modification of captured data. As stated before, it may serve as an evidence of a~malicious act. Packet trace modification often refers to something that was unauthorized. Such unauthorized alteration of packet capture data can have significant implications for the security, privacy, and integrity of the network and the devices that are connected to it, with all the data flowing through the network as well. To prevent these kinds of packet trace modification, it is essential to implement effective security measures.
+It is important to think about the prevention of modification of captured data. As stated before, it may serve as evidence of a~malicious act. Packet trace modification often refers to something that was unauthorized. Such unauthorized alteration of packet capture data can have significant implications for the security, privacy, and integrity of the network and the devices that are connected to it, with all the data flowing through the network as well. To prevent these kinds of packet trace modification, it is essential to implement effective security measures.
 
 While talking about packet capture modifications, it is important to realize that packet capture is represented as a~file stored in a~computer or removable drive. This packet capture file then serves as evidence, and if this evidence is handed off from one person to another, the process must be documented. This process is often called the \textit{chain of custody}. Evidence of all kinds should be kept in a~protected location whenever possible. This is also true for packet capture. Documenting a~chain of custody is a~good strategy to make sure that the packet capture was not in contact with anybody who should not have access to the file in the first place.
 
@@ -1023,7 +1018,7 @@ In order to detect threats that might go undetected in signature-based methods, 
 
 Some of the major benefits of anomaly-based methods are the ability to detect new and unforeseen vulnerabilities, the independency of OS, and facilitating detection of privilege abuse~\cite{LIAO201316}. 
 
-In order to be able to detect such vulnerabilities, a~profile for the network is built. An initial profile is generated over a~period of time, which is typically in a~range from hours to weeks, depending on the situation. This period is sometimes called a~training period, and it is also a~period during which the network is not protected. These profiles can be either static or dynamic. a~static profile is generated once and never changed afterward, while a~dynamic profile dynamically adjusts to the network changes. Because networks naturally change, a~static profile will eventually become so inaccurate that it will no longer provide satisfying protection. One huge problem with building profiles is that an attacker might already be attacking the network to some extent. This might mean that the profile would take such behavior as normal, and the attacker would be unrecognizable in the future. Profiles are then used to continuously scan the network for behavior that would be considered normal for a~given network like so~\cite{gtidaps}:
+In order to be able to detect such vulnerabilities, a~profile for the network is built. An initial profile is generated over a~period of time, which is typically in a~range from hours to weeks, depending on the situation. This period is sometimes called a~training period, and it is also a~period during which the network is not protected. These profiles can be either static or dynamic. A~static profile is generated once and never changed afterward, while a~dynamic profile dynamically adjusts to the network changes. Because networks naturally change, a~static profile will eventually become so inaccurate that it will no longer provide satisfying protection. One huge problem with building profiles is that an attacker might already be attacking the network to some extent. This might mean that the profile would take such behavior as normal, and the attacker would be unrecognizable in the future. Profiles are then used to continuously scan the network for behavior that would be considered normal for a~given network like so~\cite{gtidaps}:
 
 \begin{itemize}
     \item a~profile for a~network might comprise web activity an average of 13\% of network bandwidth. If this comprises significantly more bandwidth than expected, an alert might be sent to the network administrator alerting him of suspicious activity.
@@ -1071,7 +1066,15 @@ Overall, the study of these methods provided valuable insights into the complex 
 \chapter{Design and implementation of the proposed solution}
 \label{chap:desimp}
 
-The implemented application will aim to detect manipulation with the network traffic capture files and individual packet modifications with the intention to hide malicious acts in case of forensic investigation. These modifications and manipulations were deeply described in Section \ref{sec:manipul} and form a~strong basis for the application development and implementation of the solution. The final application should be able to read the packet capture file and present an analysis of this file based on implemented modification detection methods. The detection itself should be fully automated, with some specific configuration options still available, in order to tweak the application for user-specific needs.
+The implemented application will aim to detect manipulation with the network traffic capture files and individual packet modifications with the intention to hide malicious acts in case of forensic investigation. 
+
+The following Sections of this chapter will describe the technologies used to achieve this goal, the strategy for the application, and the detection methods implemented. This Chapter will also cover the application's architecture, configuration options, structure, and the modules themselves, as well as statistical analysis of the packet capture file and the results the application represents.
+
+\section{Requirements and Design}
+
+In order to create an application that would be capable of detecting modifications made to the packet capture file, it is important to have a~clear strategy before considering the architecture and design. 
+
+The modifications and manipulations were deeply described in Section \ref{sec:manipul} and form a~strong basis for the application development and implementation of the solution. The final application should be able to read the packet capture file and present an analysis of this file based on implemented modification detection methods. The detection itself should be fully automated, with some specific configuration options still available, in order to tweak the application for user-specific needs.
 
 The application's usage and configuration of some of the settings should be user-friendly, with minimum to no knowledge of programming languages. This can be achieved by dividing the application into modules and naming the specific configuration settings with self-explanatory terms.
 
@@ -1079,13 +1082,7 @@ The application will be able to process one or multiple packet captures and save
 
 After the analysis of the packet capture has proceeded, the application will present the final verdict as well as sub-results for each detection method so that the user can make a~verdict on his own as well.
 
-The following Sections of this chapter will describe the technologies used to achieve this goal, the strategy for the application, and the detection methods implemented. This Chapter will also cover the application's architecture, configuration possibilities, structure, and the modules themselves, as well as statistical analysis of the packet capture file and the results the application represents.
-
-\newpage
-
-\section{Requirements and Design}
-
-In order to create an application that would be capable of detecting modifications made to the packet capture file, it is important to have a~clear strategy before considering the architecture and design. The application aims to detect modifications made to packet capture and packets themselves. It is, therefore, safe to say that the target audience of this application will consist of network security professionals, network security enthusiasts, and analysts who need to ensure the integrity of packet capture files and the data they contain. Last but not least, the main goal of this application is to detect the changes made to packet traces, which may be a~legal document serving as proof or evidence of a~malicious act. Therefore, it must provide a~clear and concise way of expressing results in the form of statistics and probability of file modification.
+The application aims to detect modifications made to packet capture and packets themselves. It is, therefore, safe to say that the target audience of this application will consist of network security professionals, network security enthusiasts, and analysts who need to ensure the integrity of packet capture files and the data they contain. Last but not least, the main goal of this application is to detect the changes made to packet traces, which may be a~legal document serving as proof or evidence of a~malicious act. Therefore, it must provide a~clear and concise way of expressing results in the form of statistics and probability of file modification.
 
 To address the need to detect modification of packet captures, the application will utilize advanced algorithms and strategies to detect modifications made to packets inside PCAP(NG) files. The approach involves analyzing the contents of the PCAP(NG) file and comparing it to the standard behavior of packets on the network as well as building a~comprehensive context representing the file capture. Some algorithms can be used to check the packet directly, like making sure the checksum for the packet is correct, or the length of the packet makes sense; some algorithms need wider context. Therefore a~context representing the whole capture will be built. This will be done by utilizing a~database structure in the form of SQLite\footnote{\url{https://sqlite.org/}}.
 
@@ -1103,7 +1100,7 @@ The architecture of the application will consist of several components, includin
 
 The main detector engine is responsible for parsing the PCAP(NG) file and gathering basic information about the file. For this, the subprocess is called, which involves calling shell program \textit{capinfos}. After gathering essential information about file structure, its task is to start subprocesses that will be used for multiprocessing purposes and performance improvements. These subprocesses process packets one by one. This involves doing simple checks like making sure the checksum is correct and building up the context by putting the packets into a~queue in order to be saved to the database.
 
-The detection engine is the core of the application. It ensures packets get processed and saved to the database. After processing all packets and saving them, detection modules are initialized and started one by one. The modules are divided by the layer of the TCP/IP model they operate on. From the link layer to the internet layer, the transport layer up to the application layer. Each module is responsible for providing analysis on the given layer by running multiple algorithms and methods to identify inconsistencies and anomalies in the packet capture data. These methods are applied to individual packets based on the context built by the database. After the detection methods are applied, statistical analysis is performed and probability is calculated. The output is directed either to the STDOUT or the HTML file.
+The detection engine is the core of the application. It ensures packets get processed and saved to the database. After processing all packets and saving them, detection modules are initialized and started one by one. The modules are divided by the layer of the TCP/IP model they operate on. From the link layer to the Internet layer, the transport layer up to the application layer. Each module is responsible for providing analysis on the given layer by running multiple algorithms and methods to identify inconsistencies and anomalies in the packet capture data. These methods are applied to individual packets based on the context built by the database. After the detection methods are applied, statistical analysis is performed and probability is calculated. The output is directed either to the STDOUT or the HTML file.
 
 \subsection{Technology stack}
 
@@ -1118,7 +1115,7 @@ One of the key features is the simplicity and ease of use. The syntax is designe
 
 Another key advantage of Python is its versatility. It can be used for a~variety of applications, such as web development to artificial intelligence. It has been especially welcomed in the mathematics community. It is easy to use because, as an interpreted language, it does not require a~compiler and is easy and fast to run.
 
-Overall, the effectiveness, simplicity, and clear syntax with a~number of open-source libraries have played a~huge role in deciding to go with this programming language.
+Overall, the effectiveness, simplicity, and clear syntax with a~number of open-source libraries have played a~huge role in choosing this programming language.
 
 \subsubsection{Capinfos}
 
@@ -1296,7 +1293,7 @@ The TransportLayer module includes modification detection methods related to the
 
 \subsubsection{ApplicationLayer module}
 
-The last layer of TCP/IP model is the Application Layer, and the ApplicationLayer module offers modification detection methods specific to this layer.
+The last layer of the TCP/IP model is the Application Layer, and the ApplicationLayer module offers modification detection methods specific to this layer.
 
 
 \section{Implemented detection methods}
@@ -1665,7 +1662,7 @@ Regarding performance, it is safe to assume that faster hardware with multiple c
 
 Therefore, in some cases, it should be up to the end-user to decide about his own priorities. Some users might prioritize checksums more than the DNS packet checks, and the results, which are always shown for every modification detection method as well as in summary, will contain valuable information. The overall probability score should then serve as a~guideline for a~decision process, not as a~final static number deciding whether the packet capture was or was not modified.
 
-The work on the application proposed as a solution to this problem could continue in the future. Therefore, I would like to point out some features that could be added, or the features that could be improved. One of the features that could be improved is the ability to verify TCP streams in a deeper, more specific way. TCP streams can be considered a very important part of the Internet, and the functionality of TCP is stabilized. Therefore, more advanced algorithms could be implemented to check the TCP stream alongside the data being sent, as well as to verify the sequence of SEQ and ACK numbers. Another feature that could be added to the application could be more advanced TLS detection algorithms, which would include verifying the certificate and possibly even decoding some parts of HTTPS communication. 
+The work on the application proposed as a solution to this problem could continue in the future. Therefore, I would like to point out some features that could be added or characteristics that could be improved. One of the features that could be improved is the ability to verify TCP streams in a deeper, more specific way. TCP streams can be considered a very important part of the Internet, and the functionality of TCP is standardized. Therefore, more advanced algorithms could be implemented to check the TCP stream alongside the data being sent, as well as to verify the sequence of SEQ and ACK numbers. Another feature that could be added to the application could be more advanced TLS detection algorithms, which would include verifying the certificate and possibly even decoding some parts of HTTPS communication. 
 
 The performance could also be improved greatly. This could be done by even better memory optimization, algorithm optimization, or by utilizing faster hardware. More processor cores with adequate cooling can bring significant speed improvements.
 
@@ -1680,9 +1677,9 @@ After gaining the necessary theoretical information, the proposed solution in th
 
 The potential application of the proposed solution in the form of an application could be in the forensic research of the networking topic or forensic investigations, where the packet capture files serve as evidence or proof of a~malicious act. However, more research needs to be done in this field.
 
-In conclusion, the development of the application proposed in this thesis might bring more attention to the network packet captures and their significance in forensic research, as well as network security investigations and development. It is important to understand the networks and the attacks that are evolving faster than ever, with new types of attacks being developed yearly. With a~growing number of networks in the world, this topic will be more important in the security field, and more research on the topic of offline packet analysis needs to be done to understand it deeply.
+In conclusion, the development of the application proposed in this thesis might bring more attention to the network packet captures and their significance in forensic research, as well as network security investigations and development. It is important to understand the networks and the attacks that are evolving faster than ever, with new types of attacks being developed constantly. With a~growing number of networks in the world, this topic will be more important in the security field, and more research on the topic of offline packet analysis needs to be done to understand it deeply.
 
-I believe this research has fulfilled its objectives and has made a~meaningful contribution to the field of network security and forensics. I hope that the findings and insights presented here will inspire further research and initiatives to address the challenges addressed in this work.
+The future steps in advancing the forensic analysis of network packet captures should involve further research into the modification of traffic captures and their significance for potential attackers. This topic holds immense potential, and the exploration of this field should persist to uncover valuable insights.
 
 \appendix %% Start the appendices.
 \chapter{Contents of the archive in the attachment}
